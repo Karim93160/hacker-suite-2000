@@ -295,4 +295,8 @@ Visualise et gère les logs de l'agent.
 ⚙️ Configuration
 Le fichier shared_config.json est automatiquement généré (si absent) lors du premier lancement de l'application. Il stocke les paramètres par défaut et la clé AES.
 <p align="center">⚠️     ATTENTION     ⚠️</p>
-Lors de la première génération, le champ default_target_url contiendra ```https://webhook.site/VOTRE_URL_UNIQUE_ICI``` . Il est impératif de remplacer cette URL par ta propre URL de service de réception de données (par exemple, un webhook.site personnalisé) via l'interface ou en modifiant manuellement le fichier shared_config.json avant de lancer l'agent.
+Lors de la première génération, le champ default_target_url contiendra
+
+```https://webhook.site/VOTRE_URL_UNIQUE_ICI```
+
+Il est impératif de remplacer cette URL par ta propre URL de service de réception de données (par exemple, un webhook.site personnalisé) via l'interface ou en modifiant manuellement le fichier shared_config.json avant de lancer l'agent.
