@@ -110,6 +110,7 @@ Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 ├── requirements.txt
 ├── setup_termux.sh
 └── shared_config.json 
+```
 
 ---
 
