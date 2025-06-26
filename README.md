@@ -9,11 +9,7 @@
 
 ### 🚀HACKER-SUITE+2000🚀
 
----
-
 ![GitHub Gif](https://github.com/Karim93160/Dark-Web/blob/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gifhttps://github.com/Karim93160/Dark-Web/blob/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gif)
-
----
 
 Bienvenue dans HACKER-SUITE+2000, une suite d'outils avancée pour les opérations cyber, conçue pour l'exfiltration de données, le profilage système et la gestion de payloads, le tout via une interface web intuitive. Cet outil est développé avec Python et Dash, offrant une expérience utilisateur fluide pour le contrôle d'agents à distance ou locaux.
 <p align="center">
