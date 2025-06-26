@@ -117,12 +117,17 @@ Préparation Termux (Android)
 Si tu utilises Termux sur Android, tu peux exécuter le script de configuration inclus pour faciliter l'installation des outils nécessaires :
  * Ouvre Termux.
  * Clone le dépôt (si ce n'est pas déjà fait) :
-```git clone https://github.com/ton_utilisateur/hacker-suite-2000.git
-cd hacker-suite-2000```
 
- * Exécute le script ```setup_termux.sh :
-   chmod +x setup_termux.sh
-./setup_termux.sh```
+```
+git clone https://github.com/ton_utilisateur/hacker-suite-2000.git
+cd hacker-suite-2000
+```
+
+ * Exécute le script ```
+setup_termux.sh :
+chmod +x setup_termux.sh
+./setup_termux.sh
+```
 
 Ce script installera python, pip, et d'autres outils système si nécessaire.
 
@@ -132,31 +137,30 @@ Ce script installera python, pip, et d'autres outils système si nécessaire.
 
 Pour lancer l'interface de contrôle HACKER-SUITE+2000, navigue dans le répertoire principal du projet et exécute :
 
-```control_panel.py.```
+```
+control_panel.py
+```
 
 Nous te recommandons de le lancer en arrière-plan pour que tu puisses fermer ton terminal sans arrêter l'application (Assure-toi d'être dans le répertoire racine du projet) :
 
-```cd exfiltration_agent/
-nohup python3 -u control_panel.py > control_panel.log 2>&1 &```
+```
+cd exfiltration_agent/
+nohup python3 -u control_panel.py > control_panel.log 2>&1 &
+```
 
  * nohup : Empêche le processus de s'arrêter si le terminal est fermé.
  * python3 -u : Exécute Python en mode non-tamponné, ce qui est utile pour les logs en temps réel.
  * > control_panel.log 2>&1 : Redirige la sortie standard et l'erreur standard vers control_panel.log pour un débogage ultérieur.
+
  * & : Lance le processus en arrière-plan.
 Une fois lancé, tu verras des messages dans ton terminal indiquant que l'application est prête.
 Accède à l'interface via ton navigateur web à l'adresse :
 
 ```http://127.0.0.1:8050```
 
-<p align="center">
-<a href="[lien suspect supprimé]">
-<img src="https://img.shields.io/badge/Accéder%20à%20l'interface-8050-blue?style=for-the-badge&logo=internet-explorer&logoColor=white" alt="Access Interface Button">
-</a>
-</p>
-
 ---
 
-## 🖥️ Utilisation de l'interface
+## 🖥️Utilisation de l'interface
 L'interface est organisée en plusieurs onglets, chacun dédié à un aspect spécifique de la gestion de l'agent.
 Onglet "DYNAMIC DISPLAY"
 Cet onglet sert de tableau de bord visuel et dynamique, potentiellement pour afficher des informations agrégées ou des visualisations en temps réel de l'activité de l'agent. Il charge le contenu de display/index.html.
