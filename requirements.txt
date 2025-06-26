@@ -1,0 +1,11 @@
+pycryptodome
+pycryptodomex
+requests
+beautifulsoup4
+dnspython
+dash==2.17.0
+dash-html-components==2.0.0
+dash-core-components==2.0.0
+dash-table==5.0.0
+gunicorn
+psutil
