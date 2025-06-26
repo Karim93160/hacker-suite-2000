@@ -71,7 +71,7 @@ Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS,
 
 Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 
-`
+``bash
 .
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
@@ -110,7 +110,7 @@ Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 ├── requirements.txt
 ├── setup_termux.sh
 └── shared_config.json 
-`
+``
 
 ---
 
