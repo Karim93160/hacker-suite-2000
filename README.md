@@ -71,8 +71,6 @@ Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS,
 
 Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 
-``bash
-.
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
@@ -80,37 +78,36 @@ Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 ├── README_ES.md
 ├── control_panel.py
 ├── display
-│   ├── index.html
-│   ├── script.js
-│   └── style.css
+│   ├── index.html
+│   ├── script.js
+│   └── style.css
 ├── exf_agent.py
 ├── modules
-│   ├── __pycache__
-│   │   ├── aes256.cpython-312.pyc
-│   │   ├── file_explorer.cpython-312.pyc
-│   │   ├── log_streamer.cpython-312.pyc
-│   │   ├── logger.cpython-312.pyc
-│   │   ├── system_profiler.cpython-312.pyc
-│   │   └── web_explorer.cpython-312.pyc
-│   ├── aes256.py
-│   ├── anti_evasion.py
-│   ├── compression.py
-│   ├── config.py
-│   ├── exfiltration_dns.py
-│   ├── exfiltration_http.py
-│   ├── file_explorer.py
-│   ├── file_scanner.py
-│   ├── log_streamer.py
-│   ├── logger.py
-│   ├── payload_dropper.py
-│   ├── retry_manager.py
-│   ├── stealth_mode.py
-│   ├── system_profiler.py
-│   └── web_explorer.py
+│   ├── __pycache__
+│   │   ├── aes256.cpython-312.pyc
+│   │   ├── file_explorer.cpython-312.pyc
+│   │   ├── log_streamer.cpython-312.pyc
+│   │   ├── logger.cpython-312.pyc
+│   │   ├── system_profiler.cpython-312.pyc
+│   │   └── web_explorer.cpython-312.pyc
+│   ├── aes256.py
+│   ├── anti_evasion.py
+│   ├── compression.py
+│   ├── config.py
+│   ├── exfiltration_dns.py
+│   ├── exfiltration_http.py
+│   ├── file_explorer.py
+│   ├── file_scanner.py
+│   ├── log_streamer.py
+│   ├── logger.py
+│   ├── payload_dropper.py
+│   ├── retry_manager.py
+│   ├── stealth_mode.py
+│   ├── system_profiler.py
+│   └── web_explorer.py
 ├── requirements.txt
 ├── setup_termux.sh
-└── shared_config.json 
-``
+└── shared_config.json
 
 ---
 
