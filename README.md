@@ -232,7 +232,9 @@ Visualise et gère les logs de l'agent.
 Le fichier shared_config.json est automatiquement généré (si absent) lors du premier lancement de l'application. Il stocke les paramètres par défaut et la clé AES.
 <p align="center">⚠️     ATTENTION     ⚠️</p>
 Lors de la première génération, le champ default_target_url contiendra https://webhook.site/VOTRE_URL_UNIQUE_ICI. Il est impératif de remplacer cette URL par ta propre URL de service de réception de données (par exemple, un webhook.site personnalisé) via l'interface ou en modifiant manuellement le fichier shared_config.json avant de lancer l'agent.
+
 ---
+
 ## 👋 Contribuer
 Les contributions sont les bienvenues ! Si tu souhaites améliorer HACKER-SUITE+2000, n'hésite pas à :
  * Fork le dépôt.
@@ -241,9 +243,13 @@ Les contributions sont les bienvenues ! Si tu souhaites améliorer HACKER-SUITE+
  * Pousser vers la branche (git push origin feature/AmazingFeature).
  * Ouvrir une Pull Request.
 Avant de contribuer, veuillez lire le CODE_OF_CONDUCT.md.
+
 ---
+
 ## 📝 Licence
 Ce projet est sous licence LICENSE.
+
 ---
+
 ## 🤝 Code de conduite
 Veuillez consulter le CODE_OF_CONDUCT.md pour les détails sur notre code de conduite.
