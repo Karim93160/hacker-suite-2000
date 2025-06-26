@@ -119,11 +119,13 @@ Si tu utilises Termux sur Android, tu peux exécuter le script de configuration 
  * Clone le dépôt (si ce n'est pas déjà fait) :
 
 ```
-git clone https://github.com/ton_utilisateur/hacker-suite-2000.git
+git clone https://github.com/karim93160/hacker-suite-2000.git
 cd hacker-suite-2000
 ```
 
- * Exécute le script ```
+ * Exécute le script :
+
+```
 setup_termux.sh :
 chmod +x setup_termux.sh
 ./setup_termux.sh
