@@ -1,4 +1,4 @@
-[🇫🇷 Français](https://github.com/karim93160/ip-nose/blob/main/README.md) | [🇬🇧 English](https://github.com/karim93160/ip-nose/blob/main/README_EN.md) | [🇪🇸 Español](https://github.com/karim93160/ip-nose/blob/main/README_ES.md)
+[🇫🇷 Français](https://github.com/karim93160/hacker-suite-2000/blob/main/README.md) | [🇬🇧 English](https://github.com/karim93160/hacker-suite-2000/blob/main/README_EN.md) | [🇪🇸 Español](https://github.com/karim93160/hacker-suite-2000/blob/main/README_ES.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
