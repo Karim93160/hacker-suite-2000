@@ -9,7 +9,24 @@
 
 ### 🚀HACKER-SUITE+2000🚀
 
-![GitHub Gif](https://github.com/Karim93160/Dark-Web/blob/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gifhttps://github.com/Karim93160/Dark-Web/blob/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Dash-0062FF?style=for-the-badge&logo=plotly&logoColor=white" alt="Dash Plotly">
+  <img src="https://img.shields.io/badge/Cybersecurity-00CED1?style=for-the-badge&logo=hackthebox&logoColor=white" alt="Cybersecurity">
+  <img src="https://img.shields.io/badge/Termux-20C20E?style=for-the-badge&logo=android&logoColor=white" alt="Termux">
+  <img src="https://img.shields.io/github/stars/ton_utilisateur/hacker-suite-2000?style=for-the-badge" alt="Stars">
+  <img src="https://img.shields.io/github/forks/ton_utilisateur/hacker-suite-2000?style=for-the-badge" alt="Forks">
+</p>
+
+# 🚀 HACKER-SUITE+2000 : Cyber Ops Control Hub (v2.6 PRO) 🚀
+
+---
+
+<p align="center">
+  <img src="https://github.com/Karim93160/Dark-Web/raw/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gif" alt="Démonstration de Hacker-Suite+2000" width="700"/>
+</p>
+
+---
 
 Bienvenue dans HACKER-SUITE+2000, une suite d'outils avancée pour les opérations cyber, conçue pour l'exfiltration de données, le profilage système et la gestion de payloads, le tout via une interface web intuitive. Cet outil est développé avec Python et Dash, offrant une expérience utilisateur fluide pour le contrôle d'agents à distance ou locaux.
 <p align="center">
