@@ -68,39 +68,48 @@ Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS,
 ---
 
 ## 📂 Structure du projet
+
 Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 
+```bash
+.
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
-├── README.md           <- Ce fichier
-├── README_EN.md        <- Version anglaise du README
-├── README_ES.md        <- Version espagnole du README
-├── control_panel.py    <- Script principal de l'interface web Dash
-├── display             <- Contient les assets web (HTML, CSS, JS) pour l'interface
+├── README.md
+├── README_EN.md
+├── README_ES.md
+├── control_panel.py
+├── display
 │   ├── index.html
 │   ├── script.js
 │   └── style.css
-├── exf_agent.py        <- Le script de l'agent d'exfiltration lui-même
-├── modules             <- Modules Python internes pour les fonctionnalités de l'agent
+├── exf_agent.py
+├── modules
 │   ├── __pycache__
-│   ├── aes256.py           <- Module de chiffrement AES256
-│   ├── anti_evasion.py     <- Logique anti-évasion
-│   ├── compression.py      <- Gestion de la compression des données
-│   ├── config.py           <- Configuration interne des modules
-│   ├── exfiltration_dns.py <- Méthode d'exfiltration DNS
-│   ├── exfiltration_http.py<- Méthode d'exfiltration HTTP
-│   ├── file_explorer.py    <- Module d'exploration de fichiers locaux
-│   ├── file_scanner.py     <- Logique de scan de fichiers
-│   ├── log_streamer.py     <- Diffusion des logs en temps réel
-│   ├── logger.py           <- Système de journalisation
-│   ├── payload_dropper.py  <- Gestion du déploiement de payloads
-│   ├── retry_manager.py    <- Gestion des tentatives pour les opérations réseau
-│   ├── stealth_mode.py     <- Fonctionnalités de mode furtif
-│   ├── system_profiler.py  <- Module de profilage système
-│   └── web_explorer.py     <- Module d'exploration web
-├── requirements.txt    <- Liste des dépendances Python
-├── setup_termux.sh     <- Script d'aide pour la configuration sous Termux
-└── shared_config.json  <- Fichier de configuration partagée
+│   │   ├── aes256.cpython-312.pyc
+│   │   ├── file_explorer.cpython-312.pyc
+│   │   ├── log_streamer.cpython-312.pyc
+│   │   ├── logger.cpython-312.pyc
+│   │   ├── system_profiler.cpython-312.pyc
+│   │   └── web_explorer.cpython-312.pyc
+│   ├── aes256.py
+│   ├── anti_evasion.py
+│   ├── compression.py
+│   ├── config.py
+│   ├── exfiltration_dns.py
+│   ├── exfiltration_http.py
+│   ├── file_explorer.py
+│   ├── file_scanner.py
+│   ├── log_streamer.py
+│   ├── logger.py
+│   ├── payload_dropper.py
+│   ├── retry_manager.py
+│   ├── stealth_mode.py
+│   ├── system_profiler.py
+│   └── web_explorer.py
+├── requirements.txt
+├── setup_termux.sh
+└── shared_config.json 
 
 ---
 
@@ -235,21 +244,55 @@ Lors de la première génération, le champ default_target_url contiendra https:
 
 ---
 
-## 👋 Contribuer
-Les contributions sont les bienvenues ! Si tu souhaites améliorer HACKER-SUITE+2000, n'hésite pas à :
- * Fork le dépôt.
- * Créer une nouvelle branche (git checkout -b feature/AmazingFeature).
- * Effectuer tes modifications et les commiter (git commit -m 'Add some AmazingFeature').
- * Pousser vers la branche (git push origin feature/AmazingFeature).
- * Ouvrir une Pull Request.
-Avant de contribuer, veuillez lire le CODE_OF_CONDUCT.md.
+*🤝 Contributions*
 
----
+**Les contributions sont les bienvenues ! Si vous souhaitez améliorer hacker-suite+2000, corriger des bugs ou ajouter de nouvelles fonctionnalités, veuillez consulter notre Guide de Contribution.**
 
-## 📝 Licence
-Ce projet est sous licence LICENSE.
+[![Sponsor me on GitHub](https://img.shields.io/badge/Sponsor-GitHub-brightgreen.svg)](https://github.com/sponsors/karim93160)
+[![Buy me a coffee](https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00.svg)](https://www.buymeacoffee.com/karim93160)
+[![Support me on Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-F16061.svg)](https://ko-fi.com/karim93160)
+[![Support me on Patreon](https://img.shields.io/badge/Patreon-Support%20me-FF424D.svg)](https://www.patreon.com/karim93160)
+[![Donate on Liberapay](https://img.shields.io/badge/Donate-Liberapay-F6C915.svg)](https://liberapay.com/karim93160/donate)
 
----
 
-## 🤝 Code de conduite
-Veuillez consulter le CODE_OF_CONDUCT.md pour les détails sur notre code de conduite.
+_________
+
+## Licence 📜
+
+hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite+2000/blob/677eecb0be4fc81a0becc2c2154c65ffe73ddbb1/LICENSE)
+
+_________
+
+## Contact 📧
+
+Pour toute question ou suggestion, n'hésitez pas à ouvrir une [issue sur GitHub](https://github.com/Karim93160/hacker-suite+2000/issues) ou à nous contacter par email :
+
+[![Contact par Email](https://img.shields.io/badge/Contact-par%20Email-blue.svg)](mailto:karim9316077185@gmail.com)
+
+_________
+<div align="center">
+  <h2>🌿 hacker-suite+2000 - Code de Conduite 🌿</h2>
+  <p>
+    Nous nous engageons à créer un environnement accueillant et respectueux pour tous les contributeurs.
+    Veuillez prendre un moment pour lire notre <a href="CODE_OF_CONDUCT.md">Code de Conduite</a>.
+    En participant à ce projet, vous acceptez de respecter ses termes.
+  </p>
+  <p>
+    <a href="CODE_OF_CONDUCT.md">
+      <img src="https://img.shields.io/badge/Code%20of%20Conduct-Veuillez%20Lire-blueviolet?style=for-the-badge&logo=github" alt="Code de Conduite">
+    </a>
+  </p>
+</div>
+
+<div align="center">
+  <h2>🐞 Signaler un Bug dans Hashish 🐞</h2>
+  <p>
+    Rencontrez-vous un problème avec hacker-suite+2000 ? Aidez-nous à améliorer le projet en signalant les bugs !
+    Cliquez sur le bouton ci-dessous pour ouvrir directement un nouveau rapport de bug pré-rempli.
+  </p>
+  <p>
+    <a href="https://github.com/karim93160/hacker-suite+2000/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=">
+      <img src="https://img.shields.io/badge/Signaler%20un%20Bug-Ouvrir%20une%20Issue-red?style=for-the-badge&logo=bugsnag" alt="Signaler un Bug">
+    </a>
+  </p>
+</div>
