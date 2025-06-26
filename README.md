@@ -6,7 +6,8 @@
 <img src="https://img.shields.io/github/stars/karim93160/hacker-suite-2000?style=for-the-badge" alt="Stars">
 <img src="https://img.shields.io/github/forks/karim93160/hacker-suite-2000?style=for-the-badge" alt="Forks">
 </p>
-#🚀HACKER-SUITE+2000🚀
+
+# 🚀HACKER-SUITE+2000🚀
 
 ---
 
@@ -16,7 +17,9 @@ Bienvenue dans HACKER-SUITE+2000, une suite d'outils avancée pour les opératio
 <img src="https://img.shields.io/badge/Interface-Web%20Dash-blueviolet?style=for-the-badge" alt="Web Dash Interface">
 <img src="https://img.shields.io/badge/Exfiltration-HTTPS%2FDNS-green?style=for-the-badge" alt="HTTPS/DNS Exfiltration">
 </p>
+
 ---
+
 ## 🎯 Table des matières
  * Présentation
  * Fonctionnalités
@@ -39,11 +42,15 @@ Bienvenue dans HACKER-SUITE+2000, une suite d'outils avancée pour les opératio
  * Contribuer
  * Licence
  * Code de conduite
+ 
  ---
-## ✨ Présentation
+ 
+# ✨Présentation
 HACKER-SUITE+2000 est un environnement de cyber-opérations centralisé qui te permet de déployer, configurer et surveiller un agent d'exfiltration. Que tu aies besoin de collecter des fichiers spécifiques, d'obtenir des informations détaillées sur un système cible, de gérer des charges utiles malveillantes ou de maintenir la discrétion de tes opérations, cette suite te donne le contrôle nécessaire via une interface graphique basée sur un navigateur web.
 Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS, et inclut des mécanismes de filtrage avancés pour cibler précisément les données. L'interface offre un tableau de bord en temps réel, un explorateur de fichiers interactif, des capacités de profilage système et des contrôles pour la furtivité et l'évasion.
+
 ---
+
 ## 🛠️ Fonctionnalités
  * Interface Web Interactive : Contrôle l'agent via une interface utilisateur Dash accessible depuis n'importe quel navigateur.
  * Agent d'Exfiltration Polyvalent :
@@ -57,7 +64,9 @@ Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS,
  * Journalisation Intégrée : Affiche les logs de l'agent en temps réel et permet la lecture/téléchargement des logs chiffrés.
  * Tableau de Bord de Statut : Surveille les métriques clés de l'agent (fichiers scannés, exfiltrés, etc.) en direct.
  * Persistance de Configuration : Les paramètres sont sauvegardés dans shared_config.json pour un rechargement facile.
+
 ---
+
 ## 📂 Structure du projet
 Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 .
@@ -93,11 +102,15 @@ Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 ├── setup_termux.sh     <- Script d'aide pour la configuration sous Termux
 └── shared_config.json  <- Fichier de configuration partagée
 
-⚙️ Prérequis
+---
+
+## ⚙️ Prérequis
 Assure-toi d'avoir les éléments suivants installés sur ton système (recommandé : Linux ou Termux pour Android) :
  * Python 3.x (3.8 ou plus récent recommandé)
  * pip (gestionnaire de paquets Python)
+
 ---
+
 ## 📦 Installation
 Suis ces étapes pour configurer et lancer HACKER-SUITE+2000.
 Préparation Termux (Android)
@@ -115,7 +128,10 @@ cd hacker-suite-2000
 ```
    Ce script installera python, pip, et d'autres outils système si nécessaire.
 
-🚀 Démarrage de l'application
+---
+
+## 🚀 Démarrage de l'application
+
 Pour lancer l'interface de contrôle HACKER-SUITE+2000, navigue dans le répertoire principal du projet et exécute :
 ```control_panel.py.
 
