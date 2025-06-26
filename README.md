@@ -261,7 +261,7 @@ _________
 
 ## Licence 📜
 
-hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/677eecb0be4fc81a0becc2c2154c65ffe73ddbb1/LICENSE)
+hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/cae8101acb7c14a65792abfcf21b332d1dc8afd0/LICENSE)
 
 _________
 
