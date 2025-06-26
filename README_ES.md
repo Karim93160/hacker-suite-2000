@@ -19,6 +19,14 @@
 
 ---
 
+<p align="center">
+<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Requerido">
+<img src="https://img.shields.io/badge/Interfaz-Web%20Dash-blueviolet?style=for-the-badge" alt="Interfaz Web Dash">
+<img src="https://img.shields.io/badge/Exfiltración-HTTPS%2FDNS-green?style=for-the-badge" alt="Exfiltración HTTPS/DNS">
+</p>
+
+---
+
 ## 📦 Instalación
 Sigue estos pasos para configurar y lanzar HACKER-SUITE+2000.
 Preparación de Termux (Android)
@@ -69,11 +77,6 @@ Accede a la interfaz a través de tu navegador web en:
 ```http://127.0.0.1:8050```
 
 Bienvenido a HACKER-SUITE+2000, un kit de herramientas avanzado para operaciones cibernéticas, diseñado para exfiltración de datos, perfilado de sistemas y gestión de cargas útiles, todo a través de una interfaz web intuitiva. Esta herramienta está desarrollada con Python y Dash, ofreciendo una experiencia de usuario fluida para controlar agentes locales o remotos.
-<p align="center">
-<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Requerido">
-<img src="https://img.shields.io/badge/Interfaz-Web%20Dash-blueviolet?style=for-the-badge" alt="Interfaz Web Dash">
-<img src="https://img.shields.io/badge/Exfiltración-HTTPS%2FDNS-green?style=for-the-badge" alt="Exfiltración HTTPS/DNS">
-</p>
 
 ---
 *🤝 Contribuciones*
