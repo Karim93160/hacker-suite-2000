@@ -37,6 +37,7 @@ Si estás usando Termux en Android, puedes ejecutar el script de configuración 
 ```
 git clone https://github.com/karim93160/hacker-suite-2000.git
 cd hacker-suite-2000
+
 ```
 
  * Ejecuta el script:
@@ -45,6 +46,7 @@ cd hacker-suite-2000
 setup_termux.sh:
 chmod +x setup_termux.sh
 ./setup_termux.sh
+
 ```
 
 Este script instalará python, pip y otras herramientas del sistema si son necesarias.
@@ -56,7 +58,8 @@ Este script instalará python, pip y otras herramientas del sistema si son neces
 Para iniciar el panel de control de HACKER-SUITE+2000, navega al directorio principal del proyecto y ejecuta:
 
 ```
-control_panel.py
+python3 control_panel.py
+
 ```
 
 Recomendamos ejecutarlo en segundo plano para que puedas cerrar tu terminal sin detener la aplicación (asegúrate de estar en el directorio raíz del proyecto):
@@ -64,6 +67,7 @@ Recomendamos ejecutarlo en segundo plano para que puedas cerrar tu terminal sin 
 ```
 cd exfiltration_agent/
 nohup python3 -u control_panel.py > control_panel.log 2>&1 &
+
 ```
 
  * nohup: Evita que el proceso se detenga si se cierra la terminal.
@@ -74,7 +78,9 @@ nohup python3 -u control_panel.py > control_panel.log 2>&1 &
 Una vez iniciado, verás mensajes en tu terminal indicando que la aplicación está lista.
 Accede a la interfaz a través de tu navegador web en:
 
-```http://127.0.0.1:8050```
+```
+http://127.0.0.1:8050
+```
 
 Bienvenido a HACKER-SUITE+2000, un kit de herramientas avanzado para operaciones cibernéticas, diseñado para exfiltración de datos, perfilado de sistemas y gestión de cargas útiles, todo a través de una interfaz web intuitiva. Esta herramienta está desarrollada con Python y Dash, ofreciendo una experiencia de usuario fluida para controlar agentes locales o remotos.
 
