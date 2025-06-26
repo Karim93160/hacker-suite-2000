@@ -261,13 +261,13 @@ _________
 
 ## Licence 📜
 
-hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite+2000/blob/677eecb0be4fc81a0becc2c2154c65ffe73ddbb1/LICENSE)
+hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/677eecb0be4fc81a0becc2c2154c65ffe73ddbb1/LICENSE)
 
 _________
 
 ## Contact 📧
 
-Pour toute question ou suggestion, n'hésitez pas à ouvrir une [issue sur GitHub](https://github.com/Karim93160/hacker-suite+2000/issues) ou à nous contacter par email :
+Pour toute question ou suggestion, n'hésitez pas à ouvrir une [issue sur GitHub](https://github.com/Karim93160/hacker-suite-2000/issues) ou à nous contacter par email :
 
 [![Contact par Email](https://img.shields.io/badge/Contact-par%20Email-blue.svg)](mailto:karim9316077185@gmail.com)
 
@@ -293,7 +293,7 @@ _________
     Cliquez sur le bouton ci-dessous pour ouvrir directement un nouveau rapport de bug pré-rempli.
   </p>
   <p>
-    <a href="https://github.com/karim93160/hacker-suite+2000/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=">
+    <a href="https://github.com/karim93160/hacker-suite-2000/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=">
       <img src="https://img.shields.io/badge/Signaler%20un%20Bug-Ouvrir%20une%20Issue-red?style=for-the-badge&logo=bugsnag" alt="Signaler un Bug">
     </a>
   </p>
