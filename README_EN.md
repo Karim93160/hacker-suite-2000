@@ -1,6 +1,6 @@
-[🇫🇷 Français](https://github.com/karim93160/ip-nose/blob/main/README.md) |
-[🇬🇧 English](https://github.com/karim93160/ip-nose/blob/main/README_EN.md) |
-[🇪🇸 Español](https://github.com/karim93160/ip-nose/blob/main/README_ES.md)
+[🇫🇷 Français](https://github.com/karim93160/hacker-suite-2000/blob/main/README.md) |
+[🇬🇧 English](https://github.com/karim93160/hacker-suite-2000/blob/main/README_EN.md) |
+[🇪🇸 Español](https://github.com/karim93160/hacker-suite-2000/blob/main/README_ES.md)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
@@ -17,6 +17,14 @@
 
 <p align="center">
   <img src="https://github.com/Karim93160/Dark-Web/raw/56bcada59bf637cfddc36b7c3e04c6df5277b041/hacker_output.gif" alt="Hacker-Suite+2000 Demonstration" width="700"/>
+</p>
+
+---
+
+<p align="center">
+<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Requerido">
+<img src="https://img.shields.io/badge/Interfaz-Web%20Dash-blueviolet?style=for-the-badge" alt="Interfaz Web Dash">
+<img src="https://img.shields.io/badge/Exfiltración-HTTPS%2FDNS-green?style=for-the-badge" alt="Exfiltración HTTPS/DNS">
 </p>
 
 ---
@@ -71,13 +79,9 @@ Access the interface via your web browser at:
 ```http://127.0.0.1:8050```
 
 Welcome to HACKER-SUITE+2000, an advanced toolkit for cyber operations, designed for data exfiltration, system profiling, and payload management, all through an intuitive web interface. This tool is developed with Python and Dash, offering a smooth user experience for controlling local or remote agents.
-<p align="center">
-<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Required">
-<img src="https://img.shields.io/badge/Interface-Web%20Dash-blueviolet?style=for-the-badge" alt="Web Dash Interface">
-<img src="https://img.shields.io/badge/Exfiltration-HTTPS%2FDNS-green?style=for-the-badge" alt="HTTPS/DNS Exfiltration">
-</p>
 
 ---
+
 *🤝 Contributions*
 
 **Contributions are welcome! If you'd like to improve hacker-suite+2000, fix bugs, or add new features, please check out our Contribution Guide.**
