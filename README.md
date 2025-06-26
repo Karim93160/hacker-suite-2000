@@ -104,7 +104,7 @@ _________
 hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/cae8101acb7c14a65792abfcf21b332d1dc8afd0/LICENSE)
 _________
 <div align="center">
-  <h2>💬 Communauté ip-nose - Rejoignez la Discussion ! 💬</h2>
+  <h2>💬 Communauté hacker-suite-2000  - Rejoignez la Discussion ! 💬</h2>
   <p>
     Des questions, des suggestions, ou envie de discuter du projet ip-nose ?
     Rejoignez la communauté sur GitHub Discussions !
