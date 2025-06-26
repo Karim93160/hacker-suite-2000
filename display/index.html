@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Display</title>
+    
+    <style>
+        /* Styles for the iframe body */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            margin: 0;
+            padding: 0; /* No padding on the iframe body so the Matrix effect covers all space */
+            background-color: #0A0A0A;
+            color: #00EEFF;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto; /* Allows scrolling if content overflows */
+            overflow-x: hidden;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative; /* Necessary for the canvas */
+        }
+
+        /* Container for the Matrix background effect */
+        #matrix-background {
+            position: fixed; /* Fixes the Matrix background to cover everything */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Ensures the canvas is in the background */
+            pointer-events: none; /* Allows clicking through the canvas */
+        }
+
+        /* Style for the main message container */
+        #display-container {
+            background-color: rgba(16, 16, 16, 0.85); /* Slightly transparent to let Matrix show through */
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,255,65,0.1), inset 0 0 10px rgba(0,255,65,0.05);
+            border: 1px solid #006600;
+            max-width: 700px;
+            width: 90%;
+            margin: auto;
+            color: #7FFF00;
+            position: relative; /* Ensures content is above Matrix */
+            z-index: 1; /* Places the message container above the canvas */
+            backdrop-filter: blur(2px); /* Optional: slight blur for Matrix behind the container */
+            -webkit-backdrop-filter: blur(2px); /* For Safari compatibility */
+        }
+
+        /* Style for the main heading */
+        h1 {
+            color: #7FFF00;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            text-shadow: 0 0 15px rgba(127,255,0,0.9);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 2; /* Ensures the title is above the container and Matrix */
+        }
+
+        /* Style for the dynamic message */
+        #dynamic-message {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #FF6666; /* Lighter, glowing red for message text */
+            text-shadow: 0 0 15px rgba(255,102,102,0.9); /* Glowing red shadow */
+            line-height: 1.5;
+            margin-bottom: 20px;
+            z-index: 2;
+        }
+
+        /* Style for the tool name */
+        #tool-name {
+            font-size: 2.5em; /* Large size for tool name */
+            font-weight: bold;
+            color: #FFD700; /* Golden color */
+            text-shadow: 0 0 20px rgba(255,215,0,0.8); /* Glowing golden shadow */
+            margin: 20px 0; /* Margin to separate from other text */
+            line-height: 1.2;
+            white-space: pre-wrap; /* Allows line breaks */
+            z-index: 2;
+        }
+
+        /* Style for informational paragraphs */
+        p {
+            font-size: 1.1em;
+            color: #00FFFF;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            z-index: 2;
+        }
+
+        /* Style for GitHub link and any anchor link */
+        a {
+            color: #FFD700; /* Golden color for GitHub link */
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease-in-out, text-shadow 0.2s ease-in-out;
+            z-index: 2;
+            display: block; /* Make the link a block element to take full width */
+            margin: 10px auto; /* Center the block element with margin auto */
+            word-break: break-all; /* Allows long URLs to break and wrap */
+        }
+
+        a:hover {
+            color: #FFC107; /* More intense golden on hover */
+            text-shadow: 0 0 10px rgba(255,215,0,0.8);
+        }
+
+        /* Adjustments for small screens (mobile) inside the iframe */
+        @media only screen and (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            #display-container {
+                width: 95%;
+                padding: 25px;
+            }
+            h1 {
+                font-size: 1.6em;
+                margin-bottom: 15px;
+            }
+            #dynamic-message {
+                font-size: 1.2em;
+            }
+            #tool-name { /* Adjustment for tool name on mobile */
+                font-size: 2em;
+                margin: 15px 0;
+            }
+            p {
+                font-size: 0.95em;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-background"></canvas>
+
+    <div id="display-container">
+        <h1>Welcome to</h1>
+        <p id="tool-name">HACKER-SUITE+2000</p>
+        <p id="dynamic-message">Loading message...</p>
+        <p>This project is open-source and licensed under MIT. Your support is invaluable!</p>
+        <p>Give a ⭐ on GitHub:</p>
+        <p>
+            <a id="github-link" href="https://github.com/Karim93160/hacker-suite+2000" target="_blank" rel="noopener noreferrer">
+                github.com/Karim93160/hacker-suite+2000
+            </a>
+        </p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix-background');
+        const ctx = canvas.getContext('2d');
+
+        // Adjust canvas size to iframe window
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Matrix characters (can be expanded)
+        const matrixCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_!@#$%^&*()[]{};:,.<>/?`~|\\+=";
+        const columns = canvas.width / 20; // Column width (adjust 20 for character size)
+
+        // An array for the y-position of each column
+        const drops = [];
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1; // Start the first drop at the top
+        }
+
+        // Matrix animation drawing function
+        function drawMatrix() {
+            // Draw a semi-transparent black rectangle over the entire canvas for the trail effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Last digit controls the trail (lower = longer)
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Text style for Matrix characters
+            ctx.fillStyle = '#FF0000'; // Red color for characters
+            ctx.font = '20px monospace'; // Character size and font
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = matrixCharacters.charAt(Math.floor(Math.random() * matrixCharacters.length));
+                ctx.fillText(text, i * 20, drops[i] * 20); // Draw the character
+
+                // If the drop has fallen off the screen (or randomly for a more natural effect)
+                // make it restart at the top
+                if (drops[i] * 20 > canvas.height && Math.random() > 0.975) { // 0.975 = probability it restarts
+                    drops[i] = 0;
+                }
+                drops[i]++; // Make the drop fall
+            }
+        }
+
+        // Adjust canvas size if iframe window is resized
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Reset drops to adapt to new width
+            const newColumns = canvas.width / 20;
+            drops.length = 0; // Clear the old array
+            for (let i = 0; i < newColumns; i++) {
+                drops[i] = 1;
+            }
+        });
+
+        // Start the animation
+        setInterval(drawMatrix, 33); // Updates every 33ms (~30 FPS)
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
+

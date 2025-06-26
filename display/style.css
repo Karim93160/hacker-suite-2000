@@ -1,0 +1,102 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: #f0f0f0;
+    color: #333;
+    overflow-y: auto;
+    overflow-x: hidden;
+    zoom: 100%; /* Garder pour le PC, mais les media queries le remplaceront pour Android */
+}
+
+#display-container {
+    background-color: #ffffff;
+    padding: 40px; /* Conserver le padding par défaut pour les grands écrans */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    margin: 50px auto;
+    box-sizing: border-box; /* Crucial pour inclure padding et border dans la largeur/hauteur */
+}
+
+h1 {
+    color: #0056b3;
+    margin-bottom: 20px;
+}
+
+#dynamic-message {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #e44d26;
+}
+
+/* --- OPTIMISATIONS SPÉCIFIQUES POUR LES APPAREILS MOBILES (Smartphones et Petites Tablettes) --- */
+@media only screen and (max-width: 768px) {
+    body {
+        zoom: 50%; /* Votre ajustement de zoom pour les mobiles */
+        /* Note: La propriété `zoom` n'est pas standard et peut varier. */
+        /* Pour un responsive design plus robuste, envisagez des unités vw/vh pour le dimensionnement. */
+    }
+
+    #display-container {
+        width: 95%; /* Prend plus de largeur sur les petits écrans */
+        padding: 15px; /* Réduit le padding pour maximiser l'espace contenu */
+        margin: 20px auto; /* Ajuste la marge verticale sur mobile */
+    }
+
+    /* Ajustements pour les éléments de texte à l'intérieur de #display-container */
+    #display-container h1 {
+        font-size: 1.8em; /* Réduit la taille du titre principal sur mobile */
+        margin-bottom: 15px;
+    }
+
+    #display-container #dynamic-message {
+        font-size: 1.2em; /* Réduit la taille du message dynamique */
+    }
+
+    /* Styles pour les sections de contenu (si elles sont à l'intérieur de display-container) */
+    /* Si vos onglets (tabs-content) sont stylisés, ces règles peuvent aider. */
+    /* Assurez-vous que CYBER_SECTION_CONTENT_STYLE ne contient pas de 'overflow: hidden' problématique */
+    .CYBER_SECTION_CONTENT_STYLE { /* Si ce style est appliqué à un Div de contenu */
+        padding: 20px; /* Réduit le padding interne des sections d'onglets */
+        margin: 15px auto; /* Ajuste la marge pour les sections de contenu */
+    }
+
+    /* Optimisation des boutons pour les petits écrans */
+    .CYBER_BUTTON_BASE,
+    .CYBER_BUTTON_PRIMARY,
+    .CYBER_BUTTON_SECONDARY,
+    .CYBER_BUTTON_DANGER {
+        padding: 12px 20px; /* Réduit le padding des boutons */
+        font-size: 1em; /* Réduit la taille de la police des boutons */
+        letter-spacing: 1px; /* Réduit l'espacement des lettres si nécessaire */
+        margin-top: 15px; /* Ajuste les marges verticales des boutons */
+    }
+    
+    /* Si les boutons sont dans un conteneur flexbox ou avec gap, ajustez le gap */
+    div[style*="justifyContent: center"][style*="gap:"] {
+        gap: 10px; /* Réduit l'espace entre les boutons */
+    }
+
+    /* Optimisation des champs de saisie (inputs) */
+    .CYBER_INPUT_STYLE {
+        padding: 10px; /* Réduit le padding interne des inputs */
+        font-size: 0.9em; /* Réduit la taille de la police des inputs */
+    }
+    .CYBER_INPUT_WRAPPER_STYLE {
+        margin-bottom: 15px; /* Réduit l'espace sous les wrappers d'inputs */
+        gap: 8px; /* Réduit l'espace entre le label et l'input si gap est utilisé */
+    }
+
+    /* Styles pour les tableaux Dash (si les cellules ou headers débordent) */
+    .dash-header .dash-table-container .dash-spreadsheet-menu {
+        font-size: 0.85rem !important; /* Réduit la taille de la police des headers de tableau */
+        padding: 8px !important;
+    }
+    .dash-cell {
+        font-size: 0.8rem !important; /* Réduit la taille de la police des cellules de tableau */
+        padding: 8px !important;
+    }
+}
+
