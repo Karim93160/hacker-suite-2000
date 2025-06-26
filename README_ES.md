@@ -102,7 +102,7 @@ _________
 hacker-suite+2000 se distribuye bajo la [Licencia MIT](https://github.com/Karim93160/hacker-suite-2000/blob/cae8101acb7c14a65792abfcf21b332d1dc8afd0/LICENSE)
 _________
 <div align="center">
-<h2>💬 Comunidad ip-nose - ¡Únete a la Discusión! 💬</h2>
+<h2>💬 Comunidad hacker-suite-2000  - ¡Únete a la Discusión! 💬</h2>
 <p>
 ¿Preguntas, sugerencias o ganas de hablar sobre el proyecto hacker-suite-2000?
 ¡Únete a la comunidad en GitHub Discussions!
