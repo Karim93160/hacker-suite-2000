@@ -106,7 +106,7 @@ _________
 <div align="center">
   <h2>💬 Communauté hacker-suite-2000  - Rejoignez la Discussion ! 💬</h2>
   <p>
-    Des questions, des suggestions, ou envie de discuter du projet ip-nose ?
+    Des questions, des suggestions, ou envie de discuter du projet hacker-suite-2000  ?
     Rejoignez la communauté sur GitHub Discussions !
   </p>
   <p>
