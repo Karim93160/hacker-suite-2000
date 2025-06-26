@@ -71,7 +71,8 @@ Conçu pour la flexibilité, il prend en charge l'exfiltration via HTTPS et DNS,
 
 Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 
-```├── CODE_OF_CONDUCT.md
+```
+├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
 ├── README_EN.md
@@ -109,7 +110,8 @@ Voici un aperçu de l'organisation des fichiers et des répertoires du projet :
 ├── setup_termux.sh
 └── shared_config.json
 
-4 directories, 34 files```
+4 directories, 34 files
+```
 
 ---
 
