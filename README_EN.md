@@ -20,13 +20,11 @@
 </p>
 
 ---
-
 <p align="center">
-<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Requerido">
-<img src="https://img.shields.io/badge/Interfaz-Web%20Dash-blueviolet?style=for-the-badge" alt="Interfaz Web Dash">
-<img src="https://img.shields.io/badge/Exfiltración-HTTPS%2FDNS-green?style=for-the-badge" alt="Exfiltración HTTPS/DNS">
+<img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Required">
+<img src="https://img.shields.io/badge/Interface-Web%20Dash-blueviolet?style=for-the-badge" alt="Web Dash Interface">
+<img src="https://img.shields.io/badge/Exfiltration-HTTPS%2FDNS-green?style=for-the-badge" alt="HTTPS/DNS Exfiltration">
 </p>
-
 ---
 
 ## 📦 Installation
