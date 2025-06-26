@@ -287,7 +287,7 @@ _________
 </div>
 
 <div align="center">
-  <h2>🐞 Signaler un Bug dans Hashish 🐞</h2>
+  <h2>🐞 Signaler un Bug dans hacker-suite+2000  🐞</h2>
   <p>
     Rencontrez-vous un problème avec hacker-suite+2000 ? Aidez-nous à améliorer le projet en signalant les bugs !
     Cliquez sur le bouton ci-dessous pour ouvrir directement un nouveau rapport de bug pré-rempli.
