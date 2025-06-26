@@ -9,17 +9,6 @@
 
 ### 🚀HACKER-SUITE+2000🚀
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/Dash-0062FF?style=for-the-badge&logo=plotly&logoColor=white" alt="Dash Plotly">
-  <img src="https://img.shields.io/badge/Cybersecurity-00CED1?style=for-the-badge&logo=hackthebox&logoColor=white" alt="Cybersecurity">
-  <img src="https://img.shields.io/badge/Termux-20C20E?style=for-the-badge&logo=android&logoColor=white" alt="Termux">
-  <img src="https://img.shields.io/github/stars/ton_utilisateur/hacker-suite-2000?style=for-the-badge" alt="Stars">
-  <img src="https://img.shields.io/github/forks/ton_utilisateur/hacker-suite-2000?style=for-the-badge" alt="Forks">
-</p>
-
-# 🚀 HACKER-SUITE+2000 : Cyber Ops Control Hub (v2.6 PRO) 🚀
-
 ---
 
 <p align="center">
