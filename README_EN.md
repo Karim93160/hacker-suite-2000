@@ -104,7 +104,7 @@ hacker-suite+2000 is distributed under the [MIT License](https://github.com/Kari
 _________
 
 <div align="center">
-<h2>💬 ip-nose Community - Join the Discussion! 💬</h2>
+<h2>💬 hacker-suite-2000  Community - Join the Discussion! 💬</h2>
 <p>
 Questions, suggestions, or want to discuss the hacker-suite-2000 project?
 Join the community on GitHub Discussions!
