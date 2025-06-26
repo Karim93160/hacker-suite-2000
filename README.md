@@ -17,12 +17,110 @@
 
 ---
 
+## 📦 Installation
+Suis ces étapes pour configurer et lancer HACKER-SUITE+2000.
+Préparation Termux (Android)
+Si tu utilises Termux sur Android, tu peux exécuter le script de configuration inclus pour faciliter l'installation des outils nécessaires :
+ * Ouvre Termux.
+ * Clone le dépôt (si ce n'est pas déjà fait) :
+
+```
+git clone https://github.com/karim93160/hacker-suite-2000.git
+cd hacker-suite-2000
+```
+
+ * Exécute le script :
+
+```
+setup_termux.sh :
+chmod +x setup_termux.sh
+./setup_termux.sh
+```
+
+Ce script installera python, pip, et d'autres outils système si nécessaire.
+
+---
+
+## 🚀 Démarrage de l'application
+
+Pour lancer l'interface de contrôle HACKER-SUITE+2000, navigue dans le répertoire principal du projet et exécute :
+
+```
+control_panel.py
+```
+
+Nous te recommandons de le lancer en arrière-plan pour que tu puisses fermer ton terminal sans arrêter l'application (Assure-toi d'être dans le répertoire racine du projet) :
+
+```
+cd exfiltration_agent/
+nohup python3 -u control_panel.py > control_panel.log 2>&1 &
+```
+
+ * nohup : Empêche le processus de s'arrêter si le terminal est fermé.
+ * python3 -u : Exécute Python en mode non-tamponné, ce qui est utile pour les logs en temps réel.
+ * > control_panel.log 2>&1 : Redirige la sortie standard et l'erreur standard vers control_panel.log pour un débogage ultérieur.
+
+ * & : Lance le processus en arrière-plan.
+Une fois lancé, tu verras des messages dans ton terminal indiquant que l'application est prête.
+Accède à l'interface via ton navigateur web à l'adresse :
+
+```http://127.0.0.1:8050```
+
 Bienvenue dans HACKER-SUITE+2000, une suite d'outils avancée pour les opérations cyber, conçue pour l'exfiltration de données, le profilage système et la gestion de payloads, le tout via une interface web intuitive. Cet outil est développé avec Python et Dash, offrant une expérience utilisateur fluide pour le contrôle d'agents à distance ou locaux.
 <p align="center">
 <img src="https://img.shields.io/badge/Python-3.8+-informational?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.8+ Required">
 <img src="https://img.shields.io/badge/Interface-Web%20Dash-blueviolet?style=for-the-badge" alt="Web Dash Interface">
 <img src="https://img.shields.io/badge/Exfiltration-HTTPS%2FDNS-green?style=for-the-badge" alt="HTTPS/DNS Exfiltration">
 </p>
+
+---
+*🤝 Contributions*
+
+**Les contributions sont les bienvenues ! Si vous souhaitez améliorer hacker-suite+2000, corriger des bugs ou ajouter de nouvelles fonctionnalités, veuillez consulter notre Guide de Contribution.**
+
+[![Sponsor me on GitHub](https://img.shields.io/badge/Sponsor-GitHub-brightgreen.svg)](https://github.com/sponsors/karim93160)
+[![Buy me a coffee](https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00.svg)](https://www.buymeacoffee.com/karim93160)
+[![Support me on Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-F16061.svg)](https://ko-fi.com/karim93160)
+[![Support me on Patreon](https://img.shields.io/badge/Patreon-Support%20me-FF424D.svg)](https://www.patreon.com/karim93160)
+[![Donate on Liberapay](https://img.shields.io/badge/Donate-Liberapay-F6C915.svg)](https://liberapay.com/karim93160/donate)
+
+_________
+
+## Licence 📜
+
+hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/cae8101acb7c14a65792abfcf21b332d1dc8afd0/LICENSE)
+_________
+## Contact 📧
+
+Pour toute question ou suggestion, n'hésitez pas à ouvrir une [issue sur GitHub](https://github.com/Karim93160/hacker-suite-2000/issues) ou à nous contacter par email :
+
+[![Contact par Email](https://img.shields.io/badge/Contact-par%20Email-blue.svg)](mailto:karim9316077185@gmail.com)
+_________
+<div align="center">
+  <h2>🌿 hacker-suite+2000 - Code de Conduite 🌿</h2>
+  <p>
+    Nous nous engageons à créer un environnement accueillant et respectueux pour tous les contributeurs.
+    Veuillez prendre un moment pour lire notre <a href="CODE_OF_CONDUCT.md">Code de Conduite</a>.
+    En participant à ce projet, vous acceptez de respecter ses termes.
+  </p>
+  <p>
+    <a href="CODE_OF_CONDUCT.md">
+      <img src="https://img.shields.io/badge/Code%20of%20Conduct-Veuillez%20Lire-blueviolet?style=for-the-badge&logo=github" alt="Code de Conduite">
+    </a>
+  </p>
+</div>
+<div align="center">
+  <h2>🐞 Signaler un Bug dans hacker-suite+2000  🐞</h2>
+  <p>
+    Rencontrez-vous un problème avec hacker-suite+2000 ? Aidez-nous à améliorer le projet en signalant les bugs !
+    Cliquez sur le bouton ci-dessous pour ouvrir directement un nouveau rapport de bug pré-rempli.
+  </p>
+  <p>
+    <a href="https://github.com/karim93160/hacker-suite-2000/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=">
+      <img src="https://img.shields.io/badge/Signaler%20un%20Bug-Ouvrir%20une%20Issue-red?style=for-the-badge&logo=bugsnag" alt="Signaler un Bug">
+    </a>
+  </p>
+</div>
 
 ---
 
@@ -128,57 +226,6 @@ Assure-toi d'avoir les éléments suivants installés sur ton système (recomman
 
 ---
 
-## 📦 Installation
-Suis ces étapes pour configurer et lancer HACKER-SUITE+2000.
-Préparation Termux (Android)
-Si tu utilises Termux sur Android, tu peux exécuter le script de configuration inclus pour faciliter l'installation des outils nécessaires :
- * Ouvre Termux.
- * Clone le dépôt (si ce n'est pas déjà fait) :
-
-```
-git clone https://github.com/karim93160/hacker-suite-2000.git
-cd hacker-suite-2000
-```
-
- * Exécute le script :
-
-```
-setup_termux.sh :
-chmod +x setup_termux.sh
-./setup_termux.sh
-```
-
-Ce script installera python, pip, et d'autres outils système si nécessaire.
-
----
-
-## 🚀 Démarrage de l'application
-
-Pour lancer l'interface de contrôle HACKER-SUITE+2000, navigue dans le répertoire principal du projet et exécute :
-
-```
-control_panel.py
-```
-
-Nous te recommandons de le lancer en arrière-plan pour que tu puisses fermer ton terminal sans arrêter l'application (Assure-toi d'être dans le répertoire racine du projet) :
-
-```
-cd exfiltration_agent/
-nohup python3 -u control_panel.py > control_panel.log 2>&1 &
-```
-
- * nohup : Empêche le processus de s'arrêter si le terminal est fermé.
- * python3 -u : Exécute Python en mode non-tamponné, ce qui est utile pour les logs en temps réel.
- * > control_panel.log 2>&1 : Redirige la sortie standard et l'erreur standard vers control_panel.log pour un débogage ultérieur.
-
- * & : Lance le processus en arrière-plan.
-Une fois lancé, tu verras des messages dans ton terminal indiquant que l'application est prête.
-Accède à l'interface via ton navigateur web à l'adresse :
-
-```http://127.0.0.1:8050```
-
----
-
 ## 🖥️Utilisation de l'interface
 L'interface est organisée en plusieurs onglets, chacun dédié à un aspect spécifique de la gestion de l'agent.
 Onglet "DYNAMIC DISPLAY"
@@ -249,58 +296,3 @@ Visualise et gère les logs de l'agent.
 Le fichier shared_config.json est automatiquement généré (si absent) lors du premier lancement de l'application. Il stocke les paramètres par défaut et la clé AES.
 <p align="center">⚠️     ATTENTION     ⚠️</p>
 Lors de la première génération, le champ default_target_url contiendra https://webhook.site/VOTRE_URL_UNIQUE_ICI. Il est impératif de remplacer cette URL par ta propre URL de service de réception de données (par exemple, un webhook.site personnalisé) via l'interface ou en modifiant manuellement le fichier shared_config.json avant de lancer l'agent.
-
----
-
-*🤝 Contributions*
-
-**Les contributions sont les bienvenues ! Si vous souhaitez améliorer hacker-suite+2000, corriger des bugs ou ajouter de nouvelles fonctionnalités, veuillez consulter notre Guide de Contribution.**
-
-[![Sponsor me on GitHub](https://img.shields.io/badge/Sponsor-GitHub-brightgreen.svg)](https://github.com/sponsors/karim93160)
-[![Buy me a coffee](https://img.shields.io/badge/Donate-Buy%20Me%20A%20Coffee-FFDD00.svg)](https://www.buymeacoffee.com/karim93160)
-[![Support me on Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-F16061.svg)](https://ko-fi.com/karim93160)
-[![Support me on Patreon](https://img.shields.io/badge/Patreon-Support%20me-FF424D.svg)](https://www.patreon.com/karim93160)
-[![Donate on Liberapay](https://img.shields.io/badge/Donate-Liberapay-F6C915.svg)](https://liberapay.com/karim93160/donate)
-
-
-_________
-
-## Licence 📜
-
-hacker-suite+2000 distribué sous la licence [MIT License](https://github.com/Karim93160/hacker-suite-2000/blob/cae8101acb7c14a65792abfcf21b332d1dc8afd0/LICENSE)
-
-_________
-
-## Contact 📧
-
-Pour toute question ou suggestion, n'hésitez pas à ouvrir une [issue sur GitHub](https://github.com/Karim93160/hacker-suite-2000/issues) ou à nous contacter par email :
-
-[![Contact par Email](https://img.shields.io/badge/Contact-par%20Email-blue.svg)](mailto:karim9316077185@gmail.com)
-
-_________
-<div align="center">
-  <h2>🌿 hacker-suite+2000 - Code de Conduite 🌿</h2>
-  <p>
-    Nous nous engageons à créer un environnement accueillant et respectueux pour tous les contributeurs.
-    Veuillez prendre un moment pour lire notre <a href="CODE_OF_CONDUCT.md">Code de Conduite</a>.
-    En participant à ce projet, vous acceptez de respecter ses termes.
-  </p>
-  <p>
-    <a href="CODE_OF_CONDUCT.md">
-      <img src="https://img.shields.io/badge/Code%20of%20Conduct-Veuillez%20Lire-blueviolet?style=for-the-badge&logo=github" alt="Code de Conduite">
-    </a>
-  </p>
-</div>
-
-<div align="center">
-  <h2>🐞 Signaler un Bug dans hacker-suite+2000  🐞</h2>
-  <p>
-    Rencontrez-vous un problème avec hacker-suite+2000 ? Aidez-nous à améliorer le projet en signalant les bugs !
-    Cliquez sur le bouton ci-dessous pour ouvrir directement un nouveau rapport de bug pré-rempli.
-  </p>
-  <p>
-    <a href="https://github.com/karim93160/hacker-suite-2000/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&title=">
-      <img src="https://img.shields.io/badge/Signaler%20un%20Bug-Ouvrir%20une%20Issue-red?style=for-the-badge&logo=bugsnag" alt="Signaler un Bug">
-    </a>
-  </p>
-</div>
