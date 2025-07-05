@@ -4,24 +4,21 @@ import json
 import base64
 import datetime # Importe datetime pour les timestamps des logs
 
-# --- DEBUT MODIFICATION : Simplification de la gestion du logger ---
-_LOGGER = None # Initialisé à None. Ce sera patché par control_panel.py.
+# --- DEBUT MODIFICATION : Initialisation passive de _LOGGER pour être patché ---
+# _LOGGER est initialisé à None par défaut.
+# control_panel.py (ou un module parent) le patchera avec l'instance réelle du logger.
+# Si ce module est exécuté directement (__main__), il instanciera un FallbackMockLogger.
+_LOGGER = None
 
-# MockLogger simple pour le cas où modules.logger.Logger n'est pas disponible OU n'est pas patché par control_panel.py
+# MockLogger simple pour le cas où modules.logger.Logger n'est pas disponible OU n'est pas patché
 class FallbackMockLogger:
-    def log_debug(self, msg): print(f"[Fallback DEBUG] {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
-    def log_info(self, msg): print(f"[Fallback INFO] {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
-    def log_warning(self, msg): print(f"[Fallback WARNING] {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
-    def log_error(self, msg): print(f"[Fallback ERROR] {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
-    def log_critical(self, msg): print(f"[Fallback CRITICAL] {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
+    def log_debug(self, msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [Fallback DEBUG] {msg}")
+    def log_info(self, msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [Fallback INFO] {msg}")
+    def log_warning(self, msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [Fallback WARNING] {msg}")
+    def log_error(self, msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [Fallback ERROR] {msg}")
+    def log_critical(self, msg): print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [Fallback CRITICAL] {msg}")
     def get_new_logs(self, last_log_index: int = 0) -> tuple[list[str], int]: return [], 0
     def reset_logs(self): pass
-
-# Assurez-vous que _LOGGER est une instance de logger, même si modules.logger n'est pas là
-# Ce bloc est maintenant le seul responsable de l'initialisation de _LOGGER dans ce module.
-# Il sera surchargé par control_panel.py si le vrai logger est injecté.
-_LOGGER = FallbackMockLogger()
-# Aucun print ici, car cela sera fait par control_panel.py lors de l'import réel.
 
 # --- FIN MODIFICATION ---
 
@@ -51,9 +48,10 @@ class FileExplorer:
         ]
         self.base_path = "" # Initialisé ici pour éviter une erreur si _get_readable_path est appelé avant explore_path
 
-        # --- DEBUT MODIFICATION ---
-        # Le self._LOGGER sera défini par control_panel.py APRÈS l'import de cette classe.
-        # En attendant, il utilisera le _LOGGER global de ce module (qui est FallbackMockLogger par défaut).
+        # --- DEBUT MODIFICATION : Assurer l'utilisation du logger patché ---
+        # Si _LOGGER a été patché par control_panel.py, cette instance l'utilisera.
+        # Sinon (par exemple, si exécuté seul et que _LOGGER a été défini ci-dessous dans __main__),
+        # il utilisera le FallbackMockLogger.
         global _LOGGER
         self._LOGGER = _LOGGER
         self._LOGGER.log_info(f"[FileExplorer] Initialisé (Debug Mode: {debug_mode}).")
@@ -70,7 +68,6 @@ class FileExplorer:
         return None
 
     def _get_readable_path(self, path: str) -> str:
-        # S'assurer que base_path est défini avant d'essayer de l'utiliser
         if hasattr(self, 'base_path') and path.startswith(self.base_path):
             return os.path.relpath(path, self.base_path)
         return path
@@ -78,24 +75,22 @@ class FileExplorer:
     def explore_path(self, base_path: str, max_depth: int = 3):
         self.base_path = base_path
         self.found_targets = []
-        self._LOGGER.log_info(f"[FileExplorer] Début de l'exploration locale de '{base_path}' jusqu'à une profondeur de {max_depth}.") # Utilise self._LOGGER
+        self._LOGGER.log_info(f"[FileExplorer] Début de l'exploration locale de '{base_path}' jusqu'à une profondeur de {max_depth}.")
 
         if not os.path.exists(base_path):
-            self._LOGGER.log_error(f"[FileExplorer] Le chemin de base '{base_path}' n'existe pas.") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Le chemin de base '{base_path}' n'existe pas.")
             return []
         if not os.path.isdir(base_path):
-            self._LOGGER.log_error(f"[FileExplorer] Le chemin de base '{base_path}' n'est pas un répertoire.") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Le chemin de base '{base_path}' n'est pas un répertoire.")
             return []
 
 
         for root, dirs, files in os.walk(base_path):
             current_depth = root.count(os.sep) - base_path.count(os.sep)
             if current_depth > max_depth:
-                dirs[:] = [] # Empêche os.walk de descendre plus loin dans ces sous-répertoires
+                dirs[:] = []
                 continue
 
-            # Exclure les répertoires spécifiés avant de les parcourir
-            # Logique pour exclure des répertoires comme 'node_modules', '.git'
             dirs_to_keep = []
             for d in dirs:
                 if d in self.exclude_dirs:
@@ -105,7 +100,6 @@ class FileExplorer:
             dirs[:] = dirs_to_keep
 
 
-            # Vérifier le répertoire courant lui-même pour des motifs sensibles (nom de dossier)
             sensitive_match = self._is_sensitive(os.path.basename(root))
             if sensitive_match:
                 self.found_targets.append({
@@ -114,10 +108,9 @@ class FileExplorer:
                     'type': self.TARGET_TYPE_DIRECTORY,
                     'sensitive_match': sensitive_match
                 })
-                self._LOGGER.log_warning(f"[FileExplorer] Dossier sensible trouvé: {self._get_readable_path(root)} (Match: {sensitive_match})") # Utilise self._LOGGER
+                self._LOGGER.log_warning(f"[FileExplorer] Dossier sensible trouvé: {self._get_readable_path(root)} (Match: {sensitive_match})")
 
 
-            # Vérifier les fichiers dans le répertoire courant
             for file_name in files:
                 sensitive_match = self._is_sensitive(file_name)
                 if sensitive_match:
@@ -128,18 +121,18 @@ class FileExplorer:
                         'type': self.TARGET_TYPE_FILE,
                         'sensitive_match': sensitive_match
                     })
-                    self._LOGGER.log_warning(f"[FileExplorer] Fichier sensible trouvé: {self._get_readable_path(full_file_path)} (Match: {sensitive_match})") # Utilise self._LOGGER
+                    self._LOGGER.log_warning(f"[FileExplorer] Fichier sensible trouvé: {self._get_readable_path(full_file_path)} (Match: {sensitive_match})")
                 else:
                     self._log_debug(f"Fichier non sensible: {self._get_readable_path(os.path.join(root, file_name))}")
 
 
-        self._LOGGER.log_info(f"[FileExplorer] Exploration locale terminée. {len(self.found_targets)} cibles trouvées.") # Utilise self._LOGGER
+        self._LOGGER.log_info(f"[FileExplorer] Exploration locale terminée. {len(self.found_targets)} cibles trouvées.")
         return self.found_targets
 
     def read_file_content(self, target_full_path: str, max_bytes: int = 10240) -> str:
-        self._LOGGER.log_debug(f"[FileExplorer] Lecture du contenu de: {target_full_path}") # Utilise self._LOGGER
+        self._LOGGER.log_debug(f"[FileExplorer] Lecture du contenu de: {target_full_path}")
         if not os.path.exists(target_full_path) or not os.path.isfile(target_full_path):
-            self._LOGGER.log_error(f"[FileExplorer] Chemin de fichier invalide ou inexistant: {target_full_path}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Chemin de fichier invalide ou inexistant: {target_full_path}")
             return "[ERREUR] Le chemin spécifié n'existe pas ou n'est pas un fichier."
 
         try:
@@ -152,16 +145,16 @@ class FileExplorer:
 
                 return decoded_content
         except PermissionError:
-            self._LOGGER.log_error(f"[FileExplorer] Permission refusée pour lire: {target_full_path}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Permission refusée pour lire: {target_full_path}")
             return "[ERREUR] Permission refusée pour lire ce fichier."
         except Exception as e:
-            self._LOGGER.log_error(f"[FileExplorer] Erreur inattendue lors de la lecture de {target_full_path}: {e}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Erreur inattendue lors de la lecture de {target_full_path}: {e}")
             return f"[ERREUR] Impossible de lire le fichier: {e}"
 
     def download_file_base64(self, target_full_path: str) -> str:
-        self._LOGGER.log_debug(f"[FileExplorer] Téléchargement de (Base64): {target_full_path}") # Utilise self._LOGGER
+        self._LOGGER.log_debug(f"[FileExplorer] Téléchargement de (Base64): {target_full_path}")
         if not os.path.exists(target_full_path) or not os.path.isfile(target_full_path):
-            self._LOGGER.log_error(f"[FileExplorer] Chemin de fichier invalide ou inexistant pour téléchargement: {target_full_path}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Chemin de fichier invalide ou inexistant pour téléchargement: {target_full_path}")
             return "[ERREUR] Le chemin spécifié n'existe pas ou n'est pas un fichier."
 
         try:
@@ -169,10 +162,10 @@ class FileExplorer:
                 file_content = f.read()
             return base64.b64encode(file_content).decode('utf-8')
         except PermissionError:
-            self._LOGGER.log_error(f"[FileExplorer] Permission refusée pour télécharger: {target_full_path}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Permission refusée pour télécharger: {target_full_path}")
             return "[ERREUR] Permission refusée pour télécharger ce fichier."
         except Exception as e:
-            self._LOGGER.log_error(f"[FileExplorer] Erreur inattendue lors du téléchargement de {target_full_path}: {e}") # Utilise self._LOGGER
+            self._LOGGER.log_error(f"[FileExplorer] Erreur inattendue lors du téléchargement de {target_full_path}: {e}")
             return f"[ERREUR] Impossible de lire le fichier pour le téléchargement: {e}"
 
     def get_found_targets(self) -> list:
@@ -180,12 +173,22 @@ class FileExplorer:
 
     def reset_state(self):
         self.found_targets = []
-        self._LOGGER.log_info("[FileExplorer] État réinitialisé.") # Utilise self._LOGGER
+        self._LOGGER.log_info("[FileExplorer] État réinitialisé.")
 
-# --- Bloc de test ---
+# --- Bloc de test (pour exécution autonome du module) ---
 if __name__ == "__main__":
-    print("[+] Test du module FileExplorer (mode complet)...")
-    # Pour le test autonome, le _LOGGER sera le FallbackMockLogger
+    # Ce bloc ne s'exécute que si file_explorer.py est lancé directement
+    # Il assure qu'un logger est disponible pour les tests unitaires.
+    print("[+] Test du module FileExplorer (mode autonome)...")
+    # Initialisation du _LOGGER global pour le test autonome
+    try:
+        from modules.logger import Logger as AgentLoggerTest
+        _LOGGER = AgentLoggerTest(None, None, debug_mode=True, stdout_enabled=True)
+        print("[INFO] AgentLogger utilisé pour les tests autonomes de FileExplorer.")
+    except ImportError:
+        _LOGGER = FallbackMockLogger() # Défini au début du fichier
+        print("[WARNING] AgentLogger non disponible. FallbackMockLogger utilisé pour les tests autonomes de FileExplorer.")
+
     file_explorer = FileExplorer(debug_mode=True)
 
     # Créer un répertoire temporaire pour le test
@@ -195,25 +198,22 @@ if __name__ == "__main__":
         f.write("Ceci est un log sensible.")
     with open(os.path.join(test_dir, "normal.txt"), "w") as f:
         f.write("Ceci est un fichier normal.")
-    os.makedirs(os.path.join(test_dir, "wp-content", "backups"), exist_ok=True) # Test répertoire sensible
+    os.makedirs(os.path.join(test_dir, "wp-content", "backups"), exist_ok=True)
 
     print("\n--- Exécution de l'exploration pour générer des logs ---")
     file_explorer.explore_path(test_dir)
 
-    print("\n--- Récupération des logs (via le logger global de ce module) ---")
-    # Pour le test unitaire, le _LOGGER global est le FallbackMockLogger
-    all_current_logs, total_logs_count = _LOGGER.get_new_logs() # Interroge directement _LOGGER
+    print("\n--- Récupération des logs (via le logger global du module) ---")
+    all_current_logs, total_logs_count = _LOGGER.get_new_logs()
     for log in all_current_logs:
         print(f"LOG: {log}")
     print(f"Total de logs collectés: {total_logs_count}")
 
-    # Simuler une deuxième récupération pour voir les "nouveaux" logs
     print("\n--- Récupération des nouveaux logs (après un certain temps/action) ---")
-    # Ajoutons un nouveau log pour voir si get_new_logs fonctionne
     _LOGGER.log_info("[FileExplorer] Un nouveau message de log après l'exploration.")
     _LOGGER.log_warning("[FileExplorer] Attention: un autre événement s'est produit.")
 
-    new_logs, new_total_count = _LOGGER.get_new_logs(total_logs_count) # total_logs_count est l'index de départ
+    new_logs, new_total_count = _LOGGER.get_new_logs(total_logs_count)
     print(f"Nouveaux logs depuis l'index {total_logs_count}:")
     for log in new_logs:
         print(f"NOUVEAU LOG: {log}")
@@ -223,7 +223,9 @@ if __name__ == "__main__":
     # Nettoyage
     os.remove(os.path.join(test_dir, "sensitive.log"))
     os.remove(os.path.join(test_dir, "normal.txt"))
-    os.rmdir(os.path.join(test_dir, "wp-content", "backups")) # Nettoyer le sous-dossier
+    os.rmdir(os.path.join(test_dir, "wp-content", "backups"))
     os.rmdir(os.path.join(test_dir, "wp-content"))
     os.rmdir(test_dir)
     print("\n[+] Test de FileExplorer terminé.")
+
+
